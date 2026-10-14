@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.paparazzi)
 }
 
 // Номер сборки GitHub растёт с каждой сборкой — поэтому каждая новая версия
@@ -76,6 +77,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+// Снимки экранов (ScreenshotsTest) — только по запросу: ./gradlew recordPaparazziDebug -Pshots
+tasks.withType<Test>().configureEach {
+    if (!project.hasProperty("shots")) exclude("**/ScreenshotsTest*")
 }
 
 dependencies {

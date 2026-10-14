@@ -57,7 +57,6 @@ private sealed interface PlaceEdit {
 
 @Composable
 fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
-    val context = LocalContext.current
     val version by AppState.dataVersion.collectAsState()
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
     var weekMeters by remember { mutableStateOf(0.0) }
@@ -70,7 +69,25 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
         places = p
         weekMeters = m
     }
+    MainContent(
+        places, weekMeters,
+        onGo = activity::go, onSavePlace = activity::savePlace, onAddPlace = activity::addPlace,
+        onDeletePlace = activity::deletePlace, onSummary = onSummary,
+    )
+}
 
+/** Сам экран — без базы данных, чтобы его можно было показать с примерными данными. */
+@Composable
+fun MainContent(
+    places: Map<Int, Place>,
+    weekMeters: Double,
+    onGo: (String, LatLon?) -> Unit,
+    onSavePlace: (Int, String?, String) -> Unit,
+    onAddPlace: (String, String) -> Unit,
+    onDeletePlace: (Int) -> Unit,
+    onSummary: () -> Unit,
+) {
+    val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf("") }
     var edit by remember { mutableStateOf<PlaceEdit>(PlaceEdit.None) }
 
@@ -78,13 +95,13 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
         val dest = text.trim()
         if (dest.isEmpty()) return
         text = ""
-        activity.go(dest, null)
+        onGo(dest, null)
     }
 
     fun tap(id: Int) {
         val p = places[id]
         val address = p?.address
-        if (address.isNullOrBlank()) edit = PlaceEdit.Existing(id) else activity.go(address, p?.coords)
+        if (address.isNullOrBlank()) edit = PlaceEdit.Existing(id) else onGo(address, p?.coords)
     }
 
     Column(Modifier.fillMaxSize().padding(top = 20.dp, bottom = 16.dp)) {
@@ -170,7 +187,7 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
         PlaceEdit.None -> Unit
         PlaceEdit.New -> PlaceDialog(
             title = stringResource(R.string.new_place), askName = true, initialName = "", initialAddress = "",
-            onSave = { name, address -> activity.addPlace(name, address); edit = PlaceEdit.None },
+            onSave = { name, address -> onAddPlace(name, address); edit = PlaceEdit.None },
             onDelete = null, onDismiss = { edit = PlaceEdit.None },
         )
         is PlaceEdit.Existing -> {
@@ -179,9 +196,9 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
                 title = placeName(context, e.id, p), askName = e.id >= 3,
                 initialName = p?.name.orEmpty(), initialAddress = p?.address.orEmpty(),
                 onSave = { name, address ->
-                    activity.savePlace(e.id, name.takeIf { e.id >= 3 }, address); edit = PlaceEdit.None
+                    onSavePlace(e.id, name.takeIf { e.id >= 3 }, address); edit = PlaceEdit.None
                 },
-                onDelete = if (e.id >= 3 && p != null) ({ activity.deletePlace(e.id); edit = PlaceEdit.None }) else null,
+                onDelete = if (e.id >= 3 && p != null) ({ onDeletePlace(e.id); edit = PlaceEdit.None }) else null,
                 onDismiss = { edit = PlaceEdit.None },
             )
         }

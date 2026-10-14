@@ -55,10 +55,10 @@ import kotlinx.coroutines.delay
 private const val GAUGE_MAX_KMH = 160.0
 
 @Composable
-fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () -> Unit) {
+fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () -> Unit, now0: Long? = null) {
     val context = LocalContext.current
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
+    var now by remember { mutableLongStateOf(now0 ?: System.currentTimeMillis()) }
+    if (now0 == null) LaunchedEffect(Unit) {
         while (true) {
             now = System.currentTimeMillis()
             delay(1000)

@@ -59,15 +59,32 @@ fun TripDetailScreen(db: Db, tripId: Long, activity: MainActivity, onBack: () ->
         places = r.second
         loaded = true
     }
-    var explainKind by remember { mutableStateOf<CostKind?>(null) }
-    var askDelete by remember { mutableStateOf(false) }
-
     val t = trip
     if (t == null) {
         // Поездку удалили — назад к итогам.
         if (loaded) LaunchedEffect(Unit) { onBack() }
         return
     }
+    TripDetailContent(
+        t, places, onBack = onBack, onCar = onCar,
+        onPaid = { activity.setPaid(t.id, it) },
+        onDelete = { activity.deleteTrip(t.id); onBack() },
+    )
+}
+
+@Composable
+fun TripDetailContent(
+    t: Trip,
+    places: Map<Int, Place>,
+    onBack: () -> Unit,
+    onCar: () -> Unit,
+    onPaid: (Boolean) -> Unit,
+    onDelete: () -> Unit,
+    initialExplain: CostKind? = null,
+) {
+    val context = LocalContext.current
+    var explainKind by remember { mutableStateOf(initialExplain) }
+    var askDelete by remember { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 16.dp, bottom = 20.dp),
@@ -129,7 +146,7 @@ fun TripDetailScreen(db: Db, tripId: Long, activity: MainActivity, onBack: () ->
                     Text(stringResource(R.string.paid_trip), fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
                     Switch(
                         checked = t.paid,
-                        onCheckedChange = { activity.setPaid(t.id, it) },
+                        onCheckedChange = onPaid,
                         colors = SwitchDefaults.colors(
                             checkedTrackColor = C.Amber, checkedThumbColor = C.OnAmber,
                             uncheckedTrackColor = C.Track, uncheckedThumbColor = C.Muted, uncheckedBorderColor = C.Line,
@@ -169,7 +186,7 @@ fun TripDetailScreen(db: Db, tripId: Long, activity: MainActivity, onBack: () ->
             title = { Big(stringResource(R.string.delete_trip_question), 20) },
             text = { Text(routeText(context, t, places), color = C.Soft, fontSize = 17.sp) },
             confirmButton = {
-                TextButton(onClick = { askDelete = false; activity.deleteTrip(t.id); onBack() }) {
+                TextButton(onClick = { askDelete = false; onDelete() }) {
                     Text(stringResource(R.string.delete), color = C.RedSoft, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             },

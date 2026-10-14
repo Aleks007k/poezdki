@@ -45,8 +45,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun SummaryScreen(db: Db, onTrip: (Long) -> Unit, onCar: () -> Unit) {
-    val context = LocalContext.current
+fun SummaryScreen(db: Db, onTrip: (Long) -> Unit, onCar: () -> Unit, onBack: () -> Unit) {
     var monthMode by rememberSaveable { mutableStateOf(false) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
     val version by AppState.dataVersion.collectAsState()
@@ -62,22 +61,43 @@ fun SummaryScreen(db: Db, onTrip: (Long) -> Unit, onCar: () -> Unit) {
         trips = loaded.first
         places = loaded.second
     }
+    SummaryContent(
+        periodLabel(period, monthMode), monthMode, canGoLater = offset < 0, trips, places,
+        onMode = { monthMode = it; offset = 0 }, onEarlier = { offset-- }, onLater = { offset++ },
+        onTrip = onTrip, onCar = onCar, onBack = onBack,
+    )
+}
 
+@Composable
+fun SummaryContent(
+    periodText: String,
+    monthMode: Boolean,
+    canGoLater: Boolean,
+    trips: List<Trip>,
+    places: Map<Int, Place>,
+    onMode: (Boolean) -> Unit,
+    onEarlier: () -> Unit,
+    onLater: () -> Unit,
+    onTrip: (Long) -> Unit,
+    onCar: () -> Unit,
+    onBack: () -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        BackHeader(stringResource(R.string.summary), onBack)
         // Неделя | Месяц
         Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 4.dp) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Segment(stringResource(R.string.week), !monthMode, Modifier.weight(1f)) { monthMode = false; offset = 0 }
-                Segment(stringResource(R.string.month), monthMode, Modifier.weight(1f)) { monthMode = true; offset = 0 }
+                Segment(stringResource(R.string.week), !monthMode, Modifier.weight(1f)) { onMode(false) }
+                Segment(stringResource(R.string.month), monthMode, Modifier.weight(1f)) { onMode(true) }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SquareButton(R.drawable.ic_chevron_left, stringResource(R.string.previous), C.Text, { offset-- })
+            SquareButton(R.drawable.ic_chevron_left, stringResource(R.string.previous), C.Text, onEarlier)
             Text(
-                periodLabel(period, monthMode), fontFamily = Unbounded, fontWeight = FontWeight.Medium, fontSize = 18.sp,
+                periodText, fontFamily = Unbounded, fontWeight = FontWeight.Medium, fontSize = 18.sp,
                 textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
-            SquareButton(R.drawable.ic_chevron_right, stringResource(R.string.next_period), C.Text, { offset++ }, enabled = offset < 0)
+            SquareButton(R.drawable.ic_chevron_right, stringResource(R.string.next_period), C.Text, onLater, enabled = canGoLater)
         }
 
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -207,7 +227,7 @@ private fun TripCard(t: Trip, places: Map<Int, Place>, big: Boolean, onClick: ()
     }
 }
 
-private fun periodLabel(p: Period, monthMode: Boolean): String {
+fun periodLabel(p: Period, monthMode: Boolean): String {
     if (monthMode) {
         return DateTimeFormatter.ofPattern("LLLL yyyy").format(p.from).replaceFirstChar { it.uppercase() }
     }

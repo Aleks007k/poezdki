@@ -36,13 +36,14 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
             when {
                 current != null -> TripScreen(current, prefs.activeDestination, prefs.car, activity::stopTrip)
                 step == SetupStep.FUEL -> FuelSetupScreen(prefs.car, activity::saveFuel)
-                step != null -> SetupStepScreen(step, activity)
+                step != null -> SetupStepScreen(step, { activity.setupAction(step) }, activity::finishBatteryStep)
                 screen == Screen.SUMMARY -> {
                     BackHandler { screen = Screen.MAIN }
                     SummaryScreen(
                         db,
                         onTrip = { tripId = it; screen = Screen.TRIP },
                         onCar = { openCar(Screen.SUMMARY) },
+                        onBack = { screen = Screen.MAIN },
                     )
                 }
                 screen == Screen.TRIP -> {

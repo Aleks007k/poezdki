@@ -42,52 +42,58 @@ fun ExplainSheet(e: Explanation, onDismiss: () -> Unit, onChange: () -> Unit) {
         contentColor = C.Text,
         scrimColor = C.Bg.copy(alpha = 0.7f),
     ) {
-        Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Big(e.title, 22, modifier = Modifier.weight(1f))
-                Big(e.amount, 22, e.color)
-            }
-            if (e.notSet) {
-                Text(stringResource(R.string.exp_not_set), color = C.Soft, fontSize = 17.sp, lineHeight = 24.sp)
-            } else {
-                e.steps.forEach { step ->
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Caption(step.caption)
-                        Column(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(C.Bg).padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(step.words, color = C.Soft, fontSize = 15.sp)
-                            Text(step.numbers, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                        }
-                    }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Caption(stringResource(R.string.exp_sources))
-                    e.sources.forEachIndexed { i, src ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                buildAnnotatedString {
-                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(src.value) }
-                                    append(" ")
-                                    append(src.label)
-                                },
-                                fontSize = 15.sp, modifier = Modifier.weight(1f),
-                            )
-                            Text(src.origin, color = C.Muted, fontSize = 14.sp)
-                        }
-                        if (i < e.sources.lastIndex) HorizontalDivider(color = C.Track)
-                    }
-                }
-            }
-            Box(
-                Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp))
-                    .border(1.dp, C.Line, RoundedCornerShape(18.dp)).clickable(onClick = onChange),
-                contentAlignment = Alignment.Center,
-            ) { Text(stringResource(R.string.exp_change), fontWeight = FontWeight.Bold, fontSize = 17.sp) }
+        ExplainContent(e, onChange, Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding())
+    }
+}
+
+/** Содержимое листа «как посчитано». */
+@Composable
+fun ExplainContent(e: Explanation, onChange: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Big(e.title, 22, modifier = Modifier.weight(1f))
+            Big(e.amount, 22, e.color)
         }
+        if (e.notSet) {
+            Text(stringResource(R.string.exp_not_set), color = C.Soft, fontSize = 17.sp, lineHeight = 24.sp)
+        } else {
+            e.steps.forEach { step ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Caption(step.caption)
+                    Column(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(C.Bg).padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(step.words, color = C.Soft, fontSize = 15.sp)
+                        Text(step.numbers, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Caption(stringResource(R.string.exp_sources))
+                e.sources.forEachIndexed { i, src ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(src.value) }
+                                append(" ")
+                                append(src.label)
+                            },
+                            fontSize = 15.sp, modifier = Modifier.weight(1f),
+                        )
+                        Text(src.origin, color = C.Muted, fontSize = 14.sp)
+                    }
+                    if (i < e.sources.lastIndex) HorizontalDivider(color = C.Track)
+                }
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp))
+                .border(1.dp, C.Line, RoundedCornerShape(18.dp)).clickable(onClick = onChange),
+            contentAlignment = Alignment.Center,
+        ) { Text(stringResource(R.string.exp_change), fontWeight = FontWeight.Bold, fontSize = 17.sp) }
     }
 }

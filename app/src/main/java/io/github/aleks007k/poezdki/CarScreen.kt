@@ -152,7 +152,7 @@ fun FuelSetupScreen(car: CarCosts, onSave: (Double, Double) -> Unit) {
 
 /** Первый запуск: разрешения и батарея. */
 @Composable
-fun SetupStepScreen(step: SetupStep, activity: MainActivity) {
+fun SetupStepScreen(step: SetupStep, onAction: () -> Unit, onBatteryDone: () -> Unit) {
     val (text, button) = when (step) {
         SetupStep.LOCATION -> R.string.perm_location_text to R.string.allow
         SetupStep.BACKGROUND -> R.string.perm_background_text to R.string.open_settings
@@ -166,11 +166,11 @@ fun SetupStepScreen(step: SetupStep, activity: MainActivity) {
     ) {
         Text(stringResource(text), fontSize = 24.sp, lineHeight = 32.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(40.dp))
-        AmberButton(stringResource(button), onClick = { activity.setupAction(step) })
+        AmberButton(stringResource(button), onClick = onAction)
         if (step == SetupStep.BATTERY) {
             Spacer(Modifier.height(12.dp))
             Button(
-                onClick = activity::finishBatteryStep,
+                onClick = onBatteryDone,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = C.Muted),
             ) { Text(stringResource(R.string.done), fontSize = 20.sp, fontWeight = FontWeight.Bold) }
         }

@@ -12,6 +12,8 @@ playServicesLocation = "21.3.0"
 # Сервисы Google тянут старый Fragment 1.0; свежий нужен для запроса разрешений.
 fragment = "1.8.5"
 junit = "4.13.2"
+# Снимки экранов в CI (без телефона и эмулятора).
+paparazzi = "1.3.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,3 +31,4 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+paparazzi = { id = "app.cash.paparazzi", version.ref = "paparazzi" }
