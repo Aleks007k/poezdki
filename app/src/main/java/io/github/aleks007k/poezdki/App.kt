@@ -55,7 +55,6 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                     )
                 }
                 screen == Screen.CAR -> {
-                    BackHandler { screen = carBack }
                     CarScreen(
                         prefs.car,
                         onBack = { screen = carBack },

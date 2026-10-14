@@ -1,5 +1,6 @@
 package io.github.aleks007k.poezdki
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,7 +37,7 @@ private fun Double.input() = if (this > 0) Format.forInput(this) else ""
 
 /** Экран «Машина»: все расходы, как считают автоклубы. Пустое поле = не считается. */
 @Composable
-fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit) {
+fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, systemBack: Boolean = true) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
     var price by rememberSaveable { mutableStateOf(car.pricePerLiter.input()) }
@@ -60,12 +61,15 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit) {
         fareBase = z(fareBase), farePerKm = Format.parse(fareKm), farePerMinute = z(fareMin),
     )
     val valid = edited.litersPer100 > 0 && edited.pricePerLiter > 0
+    // «Назад» тоже сохраняет — чтобы введённое не терялось молча.
+    val leave = { if (valid) onSave(edited) else onBack() }
+    if (systemBack) BackHandler(onBack = leave)
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 16.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        BackHeader(stringResource(R.string.car_title), onBack)
+        BackHeader(stringResource(R.string.car_title), leave)
 
         // Итог: сколько стоит 1 км.
         Panel(Modifier.fillMaxWidth(), radius = 22.dp, padding = 16.dp) {

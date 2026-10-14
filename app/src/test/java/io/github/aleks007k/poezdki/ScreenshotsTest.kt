@@ -113,7 +113,7 @@ class ScreenshotsTest {
 
     @Test
     fun carScreen() = shot("6_car") {
-        CarScreen(car, no) {}
+        CarScreen(car, no, {}, systemBack = false)
     }
 
     @Test
