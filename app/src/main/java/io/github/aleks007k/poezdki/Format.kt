@@ -8,7 +8,11 @@ object Format {
     /** 87 км → "87"; меньше 10 км — с одной цифрой после запятой: "8,4". */
     fun km(meters: Double): String {
         val km = meters / 1000.0
-        return if (km < 10) decimal(km, 1) else decimal(km, 0)
+        return when {
+            km < 0.05 -> "0"
+            km < 10 -> decimal(km, 1)
+            else -> decimal(km, 0)
+        }
     }
 
     /** "11,20" */
@@ -49,8 +53,6 @@ object Format {
     /** Скорость: 52.4 → "52". */
     fun speed(kmh: Double): String = decimal(kmh, 0)
 
-    /** Для поля ввода: 6.5 → "6,5", 7.0 → "7". */
-    fun forInput(value: Double): String =
-        BigDecimal(value).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros()
-            .toPlainString().replace('.', ',')
+    /** Для поля ввода: 6.5 → "6,5", 7.0 → "7", 18000 → "18 000". */
+    fun forInput(value: Double): String = number(value, 2)
 }

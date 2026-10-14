@@ -105,7 +105,7 @@ fun SummaryContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SmallStat(Modifier.weight(1f), Format.km(trips.sumOf { it.distanceM }), stringResource(R.string.caption_km))
                     SmallStat(Modifier.weight(1f), trips.size.toString(), stringResource(R.string.caption_trips))
-                    SmallStat(Modifier.weight(1f), Format.decimal(trips.sumOf { it.liters }, 1), stringResource(R.string.caption_liters))
+                    SmallStat(Modifier.weight(1f), Format.number(trips.sumOf { it.liters }, 1), stringResource(R.string.caption_liters))
                 }
             }
             item { CostPlate(trips) }

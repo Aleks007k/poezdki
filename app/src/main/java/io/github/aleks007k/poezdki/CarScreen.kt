@@ -84,9 +84,9 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
                     parts.forEach { (v, c) -> Box(Modifier.weight(v.toFloat()).height(8.dp).background(c)) }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(context.getString(R.string.legend_fuel, Format.number(edited.fuelPerKm, 2)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Text(context.getString(R.string.legend_wear, Format.number(edited.wearPerKm, 2)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Text(context.getString(R.string.legend_upkeep, Format.number(edited.upkeepPerKm, 2)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(context.getString(R.string.legend_fuel, Format.money(edited.fuelPerKm)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(context.getString(R.string.legend_wear, Format.money(edited.wearPerKm)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(context.getString(R.string.legend_upkeep, Format.money(edited.upkeepPerKm)), color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -147,8 +147,8 @@ fun FuelSetupScreen(car: CarCosts, onSave: (Double, Double) -> Unit) {
     Column(Modifier.fillMaxSize().padding(top = 40.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.setup_fuel_title), fontFamily = Unbounded, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 36.sp)
         Spacer(Modifier.height(8.dp))
-        Field(stringResource(R.string.liters_per_100), l100, { l100 = it }, Modifier.fillMaxWidth())
-        Field(stringResource(R.string.price_per_liter), price, { price = it }, Modifier.fillMaxWidth())
+        Field(stringResource(R.string.liters_per_100), l100, { l100 = it }, Modifier.fillMaxWidth(), placeholder = "7")
+        Field(stringResource(R.string.price_per_liter), price, { price = it }, Modifier.fillMaxWidth(), placeholder = "1,85")
         Spacer(Modifier.weight(1f))
         AmberButton(stringResource(R.string.next), onClick = { if (l != null && p != null) onSave(l, p) }, enabled = l != null && p != null)
     }

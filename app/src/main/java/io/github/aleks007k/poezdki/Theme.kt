@@ -190,7 +190,7 @@ fun Field(
             Text(label, color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             BasicTextField(
                 value = value,
-                onValueChange = { s -> onChange(if (numeric) s.filter { it.isDigit() || it == ',' || it == '.' || it == ' ' } else s) },
+                onValueChange = { s -> onChange(if (numeric) s.filter { it.isDigit() || it == ',' || it == '.' || it == ' ' || it == '\u00A0' } else s) },
                 textStyle = if (numeric) TextStyle(color = C.Text, fontFamily = Unbounded, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 else TextStyle(color = C.Text, fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
                 singleLine = numeric,

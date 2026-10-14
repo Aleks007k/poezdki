@@ -9,6 +9,8 @@ class FormatTest {
     fun numbers() {
         assertEquals("87", Format.km(87_400.0))
         assertEquals("8,4", Format.km(8_420.0))
+        assertEquals("0", Format.km(0.0))
+        assertEquals("18\u00A0000", Format.forInput(18_000.0))
         assertEquals("11,20", Format.money(11.2))
         assertEquals(1 to 5, Format.hoursMinutes(65 * 60_000L))
         assertEquals(6.5, Format.parse("6,5")!!, 0.0)
