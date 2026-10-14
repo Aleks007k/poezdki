@@ -1,0 +1,116 @@
+name: Build APK
+
+# Каждый push собирает приложение и прогоняет тесты.
+# Push в main (с ключом подписи) — выкладывает APK в Releases → «Последняя версия».
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: Install SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Check signing key
+        id: signing
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          if [ -f signing/release.p12 ] && [ -n "$SIGNING_PASSWORD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Ключа подписи ещё нет — APK собирается только для проверки и не выкладывается."
+          fi
+
+      - name: Build release APK
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/Poezdki.apk
+
+      - name: Show permissions
+        run: |
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          AAPT2=$(ls "$SDK"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n 1)
+          "$AAPT2" dump permissions dist/Poezdki.apk
+
+      - name: Verify signature
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          # APK должен быть подписан постоянным ключом — иначе не встанет поверх старой версии.
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
+          APK_SHA=$("$APKSIGNER" verify --print-certs dist/Poezdki.apk \
+            | grep -m1 "certificate SHA-256 digest" | sed 's/.*digest: //' \
+            | tr -d ' :' | tr 'A-F' 'a-f')
+          KEY_SHA=$(keytool -list -v -keystore signing/release.p12 -storetype PKCS12 \
+            -storepass:env SIGNING_PASSWORD -alias poezdki \
+            | grep -m1 "SHA256:" | sed 's/.*SHA256: //' \
+            | tr -d ' :' | tr 'A-F' 'a-f')
+          echo "Отпечаток в APK: $APK_SHA"
+          echo "Отпечаток ключа: $KEY_SHA"
+          if [ -z "$APK_SHA" ] || [ "$APK_SHA" != "$KEY_SHA" ]; then
+            echo "::error::APK подписан не постоянным ключом."
+            exit 1
+          fi
+
+      - name: Upload APK artifact
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Poezdki-apk
+          path: dist/Poezdki.apk
+          if-no-files-found: error
+
+      - name: Publish «Последняя версия»
+        if: steps.signing.outputs.ready == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Один и тот же релиз «latest» каждый раз заменяется новым APK —
+          # ссылка для скачивания на телефоне не меняется.
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest dist/Poezdki.apk \
+            --target "$GITHUB_SHA" \
+            --title "Последняя версия (сборка ${GITHUB_RUN_NUMBER})" \
+            --notes "Скачайте Poezdki.apk ниже и установите поверх старой версии. Поездки сохранятся."

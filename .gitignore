@@ -1,0 +1,20 @@
+# Сборка
+.gradle/
+build/
+app/build/
+dist/
+
+# Локальные настройки
+local.properties
+*.iml
+.idea/
+
+# Ключи подписи. В репозитории хранится ТОЛЬКО постоянный ключ
+# signing/release.p12 — он зашифрован паролем владельца (секрет GitHub).
+*.p12
+*.jks
+*.keystore
+signing/*
+!signing/release.p12
+
+.DS_Store

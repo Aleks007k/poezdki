@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ВСЕ тексты приложения — здесь. Для перевода: скопировать файл в values-de и т. п. -->
+<resources>
+    <string name="app_name">Поездки</string>
+
+    <!-- Главный экран -->
+    <string name="where">Куда</string>
+    <string name="go">Поехали</string>
+    <string name="home">Дом</string>
+    <string name="work">Работа</string>
+    <string name="custom_place">Своё место</string>
+    <string name="summary">Итоги</string>
+
+    <!-- Окно адреса кнопки -->
+    <string name="place_address">Адрес</string>
+    <string name="place_name">Название</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+
+    <!-- Поездка -->
+    <string name="stop">Стоп</string>
+    <string name="trip_to">→ %1$s</string>
+    <string name="notif_channel">Запись поездки</string>
+    <string name="notif_recording">Идёт запись поездки</string>
+    <string name="need_location">Без доступа к местоположению поездку не записать</string>
+    <string name="need_gps">Без GPS поездку не записать</string>
+
+    <!-- Единицы -->
+    <string name="km_value">%1$s км</string>
+    <string name="money_value">%1$s €</string>
+    <string name="duration_hm">%1$d ч %2$02d мин</string>
+    <string name="duration_m">%1$d мин</string>
+
+    <!-- Итоги -->
+    <string name="week">Неделя</string>
+    <string name="month">Месяц</string>
+    <string name="previous">Раньше</string>
+    <string name="next_period">Позже</string>
+    <string name="caption_km">км</string>
+    <string name="caption_trips">поездок</string>
+    <string name="caption_euro">€</string>
+    <string name="no_trips">Поездок нет</string>
+    <string name="trip_card">%1$s → %2$s · %3$s · %4$s · %5$s</string>
+    <string name="unknown_place">…</string>
+    <string name="delete_trip_question">Удалить поездку?</string>
+    <string name="delete">Удалить</string>
+
+    <!-- Расход -->
+    <string name="fuel">Расход</string>
+    <string name="liters_per_100">Расход, л на 100 км</string>
+    <string name="price_per_liter">Цена литра, €</string>
+
+    <!-- Первый запуск -->
+    <string name="setup_fuel_title">Сколько тратит машина?</string>
+    <string name="next">Далее</string>
+    <string name="perm_location_text">Километры считаются по GPS. Разреши доступ к местоположению.</string>
+    <string name="perm_background_text">Чтобы запись шла, когда открыт Google Maps или погас экран, выбери «Разрешить в любом режиме».</string>
+    <string name="perm_notifications_text">Разреши уведомления — так видно, что идёт запись поездки.</string>
+    <string name="battery_text">Чтобы запись не обрывалась, разреши работу в фоне.\n\nОткрой «Аккумулятор» и выбери «Без ограничений».</string>
+    <string name="allow">Разрешить</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="done">Готово</string>
+</resources>
