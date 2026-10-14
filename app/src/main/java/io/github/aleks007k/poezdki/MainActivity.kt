@@ -20,7 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -43,6 +45,7 @@ class MainActivity : ComponentActivity() {
     /** Поездка, которая ждёт разрешения или включения GPS. */
     private var pending: Pair<String, LatLon?>? = null
     private var resolving = false
+    private var resolveAgain = false
 
     private val askLocation =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -71,13 +74,19 @@ class MainActivity : ComponentActivity() {
         db = Db.get(this)
         refreshSetup()
         setContent { PoezdkiApp(this, prefs, db) }
+        // Пока приложение на экране: при открытии и после каждой новой поездки
+        // определить адреса, которые ещё не определены.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                AppState.dataVersion.collect { resolveAddresses() }
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshSetup()
         TripService.resumeIfNeeded(this)
-        resolveAddresses()
     }
 
     // --- Первый запуск ---
@@ -215,8 +224,12 @@ class MainActivity : ComponentActivity() {
 
     /** Определить адреса, которые не определились раньше. Только пока приложение на экране. */
     private fun resolveAddresses() {
-        if (resolving) return
+        if (resolving) {
+            resolveAgain = true
+            return
+        }
         resolving = true
+        resolveAgain = false
         lifecycleScope.launch {
             try {
                 var changed = false
@@ -239,6 +252,7 @@ class MainActivity : ComponentActivity() {
                 if (changed) AppState.dataChanged()
             } finally {
                 resolving = false
+                if (resolveAgain) resolveAddresses()
             }
         }
     }
