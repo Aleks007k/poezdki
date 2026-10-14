@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -69,7 +70,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Тёмная тема всегда: светлые значки в строке состояния.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         prefs = Prefs(this)
         db = Db.get(this)
         refreshSetup()
@@ -105,9 +110,15 @@ class MainActivity : ComponentActivity() {
     }
 
     fun saveFuel(litersPer100: Double, pricePerLiter: Double) {
-        prefs.litersPer100 = litersPer100
-        prefs.pricePerLiter = pricePerLiter
+        prefs.car = prefs.car.copy(litersPer100 = litersPer100, pricePerLiter = pricePerLiter)
         refreshSetup()
+    }
+
+    /** Экран «Машина». Действует на новые поездки. */
+    fun saveCar(car: CarCosts) {
+        prefs.car = car
+        refreshSetup()
+        AppState.dataChanged()
     }
 
     fun setupAction(step: SetupStep) {
@@ -211,6 +222,27 @@ class MainActivity : ComponentActivity() {
             AppState.dataChanged()
             val coords = Geo.coordsOf(this@MainActivity, address) ?: return@launch
             withContext(Dispatchers.IO) { db.savePlace(Place(id, name, address, coords)) }
+            AppState.dataChanged()
+        }
+    }
+
+    fun addPlace(name: String, address: String) {
+        lifecycleScope.launch {
+            val id = withContext(Dispatchers.IO) { db.nextPlaceId() }
+            savePlace(id, name, address)
+        }
+    }
+
+    fun deletePlace(id: Int) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { db.deletePlace(id) }
+            AppState.dataChanged()
+        }
+    }
+
+    fun setPaid(id: Long, paid: Boolean) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { db.setPaid(id, paid) }
             AppState.dataChanged()
         }
     }

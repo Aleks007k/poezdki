@@ -167,7 +167,7 @@ class TripService : Service(), LocationListener {
 
     private fun publish() {
         val t = tracker ?: return
-        AppState.live.value = LiveTrip(prefs.activeStart, t.distanceM)
+        AppState.live.value = LiveTrip(prefs.activeStart, t.distanceM, t.speedKmh, t.maxSpeedKmh, t.stoppedMs)
         val km = Format.km(t.distanceM)
         if (km != lastShownKm) {
             lastShownKm = km
@@ -188,8 +188,10 @@ class TripService : Service(), LocationListener {
                     startAddress = null, // адреса определим, когда приложение будет на экране
                     endAddress = null,
                     distanceM = end.distanceM,
-                    litersPer100 = prefs.litersPer100,
-                    pricePerLiter = prefs.pricePerLiter,
+                    costs = prefs.car,
+                    destination = prefs.activeDestination.ifBlank { null },
+                    maxSpeedKmh = end.maxSpeedKmh,
+                    stoppedMs = end.stoppedMs,
                 )
             )
             AppState.dataChanged()

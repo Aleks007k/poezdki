@@ -6,7 +6,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
-/** Поездка. Расход и цена — те, что действовали в момент поездки. */
+/** Поездка. Расходы машины — те, что действовали в момент поездки. */
 data class Trip(
     val id: Long,
     val startTime: Long,
@@ -16,10 +16,20 @@ data class Trip(
     val startAddress: String?,
     val endAddress: String?,
     val distanceM: Double,
-    val litersPer100: Double,
-    val pricePerLiter: Double,
+    val costs: CarCosts,
+    val destination: String? = null,
+    val maxSpeedKmh: Double = 0.0,
+    val stoppedMs: Long = 0,
+    val paid: Boolean = false,
 ) {
-    val cost get() = Format.cost(distanceM, litersPer100, pricePerLiter)
+    val durationMs get() = endTime - startTime
+    val liters get() = costs.liters(distanceM)
+    val fuel get() = costs.fuel(distanceM)
+    val wear get() = costs.wear(distanceM)
+    val upkeep get() = costs.upkeep(distanceM)
+    val total get() = costs.total(distanceM)
+    val fare get() = costs.fare(distanceM, durationMs)
+    val avgSpeedKmh get() = if (durationMs > 0) distanceM / 1000.0 / (durationMs / 3_600_000.0) else 0.0
 }
 
 /** Кнопка места: 1 — Дом, 2 — Работа, 3 — своя. */
@@ -27,7 +37,7 @@ data class Place(val id: Int, val name: String?, val address: String?, val coord
 
 /** База данных SQLite. Лежит только в телефоне. */
 class Db private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, 1) {
+    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, 2) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -36,7 +46,10 @@ class Db private constructor(context: Context) :
                 start_time INTEGER NOT NULL, end_time INTEGER NOT NULL,
                 start_lat REAL, start_lon REAL, end_lat REAL, end_lon REAL,
                 start_addr TEXT, end_addr TEXT,
-                distance_m REAL NOT NULL, l_per_100 REAL NOT NULL, price REAL NOT NULL)"""
+                distance_m REAL NOT NULL, l_per_100 REAL NOT NULL, price REAL NOT NULL,
+                destination TEXT, max_speed REAL NOT NULL DEFAULT 0,
+                stopped_ms INTEGER NOT NULL DEFAULT 0, costs TEXT,
+                paid INTEGER NOT NULL DEFAULT 0)"""
         )
         db.execSQL("CREATE INDEX trips_start ON trips(start_time)")
         // Точки GPS текущей поездки. После конца поездки удаляются.
@@ -53,7 +66,14 @@ class Db private constructor(context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Новые версии базы будут добавлять изменения здесь, не удаляя поездки.
+        // Только добавляем — старые поездки остаются как были.
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE trips ADD COLUMN destination TEXT")
+            db.execSQL("ALTER TABLE trips ADD COLUMN max_speed REAL NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE trips ADD COLUMN stopped_ms INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE trips ADD COLUMN costs TEXT")
+            db.execSQL("ALTER TABLE trips ADD COLUMN paid INTEGER NOT NULL DEFAULT 0")
+        }
     }
 
     // --- Поездки ---
@@ -67,9 +87,23 @@ class Db private constructor(context: Context) :
             put("start_addr", t.startAddress)
             put("end_addr", t.endAddress)
             put("distance_m", t.distanceM)
-            put("l_per_100", t.litersPer100)
-            put("price", t.pricePerLiter)
+            put("l_per_100", t.costs.litersPer100)
+            put("price", t.costs.pricePerLiter)
+            put("destination", t.destination)
+            put("max_speed", t.maxSpeedKmh)
+            put("stopped_ms", t.stoppedMs)
+            put("costs", t.costs.encode())
+            put("paid", if (t.paid) 1 else 0)
         })
+    }
+
+    fun trip(id: Long): Trip? =
+        readableDatabase.rawQuery("SELECT * FROM trips WHERE id = ?", arrayOf(id.toString()))
+            .use { c -> c.list { readTrip(it) }.firstOrNull() }
+
+    fun setPaid(id: Long, paid: Boolean) {
+        writableDatabase.update("trips", ContentValues().apply { put("paid", if (paid) 1 else 0) },
+            "id = ?", arrayOf(id.toString()))
     }
 
     fun trips(fromMillis: Long, toMillis: Long): List<Trip> =
@@ -105,8 +139,15 @@ class Db private constructor(context: Context) :
         startAddress = c.str("start_addr"),
         endAddress = c.str("end_addr"),
         distanceM = c.getDouble(c.getColumnIndexOrThrow("distance_m")),
-        litersPer100 = c.getDouble(c.getColumnIndexOrThrow("l_per_100")),
-        pricePerLiter = c.getDouble(c.getColumnIndexOrThrow("price")),
+        // Поездки первой версии знали только расход и цену.
+        costs = CarCosts.decode(c.str("costs")) ?: CarCosts(
+            litersPer100 = c.getDouble(c.getColumnIndexOrThrow("l_per_100")),
+            pricePerLiter = c.getDouble(c.getColumnIndexOrThrow("price")),
+        ),
+        destination = c.str("destination"),
+        maxSpeedKmh = c.getDouble(c.getColumnIndexOrThrow("max_speed")),
+        stoppedMs = c.getLong(c.getColumnIndexOrThrow("stopped_ms")),
+        paid = c.getInt(c.getColumnIndexOrThrow("paid")) != 0,
     )
 
     // --- Точки GPS ---
@@ -164,6 +205,16 @@ class Db private constructor(context: Context) :
             }
         }, SQLiteDatabase.CONFLICT_REPLACE)
     }
+
+    fun deletePlace(id: Int) {
+        writableDatabase.delete("places", "id = ?", arrayOf(id.toString()))
+    }
+
+    /** Номер для нового своего места: 1 — Дом, 2 — Работа, дальше — свои. */
+    fun nextPlaceId(): Int =
+        readableDatabase.rawQuery("SELECT MAX(id) FROM places", null).use { c ->
+            if (c.moveToFirst() && !c.isNull(0)) maxOf(c.getInt(0), 2) + 1 else 3
+        }
 
     companion object {
         @Volatile private var instance: Db? = null

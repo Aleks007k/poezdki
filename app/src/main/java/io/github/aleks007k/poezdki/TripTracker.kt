@@ -11,8 +11,15 @@ data class GpsPoint(
     val latLon get() = LatLon(lat, lon)
 }
 
-/** Чем закончилась поездка: когда машина остановилась, где и сколько проехала. */
-data class TripEnd(val endTime: Long, val endPoint: LatLon?, val distanceM: Double)
+/** Чем закончилась поездка: когда машина остановилась, где, сколько проехала. */
+data class TripEnd(
+    val endTime: Long,
+    val endPoint: LatLon?,
+    val distanceM: Double,
+    val maxSpeedKmh: Double = 0.0,
+    /** Сколько простояли (пробки, светофоры) — без последней остановки. */
+    val stoppedMs: Long = 0,
+)
 
 /**
  * Считает километры и решает, когда поездка закончилась.
@@ -34,6 +41,16 @@ class TripTracker(private val startTime: Long, var target: LatLon?) {
     /** Поездка на паузе: стоим дольше 10 минут, ждём, не поедем ли дальше. */
     var paused = false
         private set
+
+    /** Текущая, максимальная скорость и время стоянок — для экрана поездки. */
+    var speedKmh = 0.0
+        private set
+    var maxSpeedKmh = 0.0
+        private set
+    var stoppedMs = 0L
+        private set
+    private var lastMoving = true
+    private var stoppedAtStop = 0L
 
     private var lastPoint: GpsPoint? = null
     private var anchor: GpsPoint? = null
@@ -59,6 +76,15 @@ class TripTracker(private val startTime: Long, var target: LatLon?) {
             distanceM(it.lat, it.lon, p.lat, p.lon) / ((p.time - it.time) / 1000.0) * 3.6
         } ?: 0.0
         val moving = speed >= Config.STOP_SPEED_KMH
+
+        speedKmh = speed
+        // Максимум — только по скорости от самого GPS (она точнее, чем по точкам).
+        p.speedKmh?.let { if (it <= Config.MAX_JUMP_SPEED_KMH) maxSpeedKmh = maxOf(maxSpeedKmh, it) }
+        if (prev != null && !moving && !lastMoving) {
+            val dt = p.time - prev.time
+            if (dt <= Config.MAX_STOP_GAP_MS) stoppedMs += dt
+        }
+        lastMoving = moving
 
         lastPoint = p
         if (startPoint == null) {
@@ -88,6 +114,7 @@ class TripTracker(private val startTime: Long, var target: LatLon?) {
             stopStart = p.time
             stopPoint = p
             distanceAtStop = distanceM
+            stoppedAtStop = stoppedMs
         }
     }
 
@@ -104,7 +131,7 @@ class TripTracker(private val startTime: Long, var target: LatLon?) {
         val since = stopStart
         if (since == null) {
             // Едем, но точки давно не приходят (GPS пропал надолго).
-            if (now - last.time >= listenAll) end = TripEnd(last.time, last.latLon, distanceM)
+            if (now - last.time >= listenAll) end = TripEnd(last.time, last.latLon, distanceM, maxSpeedKmh, stoppedMs)
             return end
         }
         val stoppedFor = now - since
@@ -124,10 +151,12 @@ class TripTracker(private val startTime: Long, var target: LatLon?) {
     /** Остановить вручную (кнопка «Стоп»). */
     fun stopNow(now: Long): TripEnd {
         end?.let { return it }
-        val e = if (stopStart != null) endAtStop() else TripEnd(now, lastPoint?.latLon, distanceM)
+        val e = if (stopStart != null) endAtStop()
+        else TripEnd(now, lastPoint?.latLon, distanceM, maxSpeedKmh, stoppedMs)
         end = e
         return e
     }
 
-    private fun endAtStop() = TripEnd(stopStart!!, stopPoint?.latLon, distanceAtStop)
+    private fun endAtStop() =
+        TripEnd(stopStart!!, stopPoint?.latLon, distanceAtStop, maxSpeedKmh, stoppedAtStop)
 }

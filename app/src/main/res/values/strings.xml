@@ -2,24 +2,37 @@
 <!-- ВСЕ тексты приложения — здесь. Для перевода: скопировать файл в values-de и т. п. -->
 <resources>
     <string name="app_name">Поездки</string>
+    <string name="back">Назад</string>
 
     <!-- Главный экран -->
     <string name="where">Куда</string>
+    <string name="dest_hint">Улица, город…</string>
     <string name="go">Поехали</string>
     <string name="home">Дом</string>
     <string name="work">Работа</string>
     <string name="custom_place">Своё место</string>
+    <string name="set_address">Задать адрес</string>
+    <string name="add_place">Добавить место</string>
+    <string name="this_week">Эта неделя</string>
     <string name="summary">Итоги</string>
 
-    <!-- Окно адреса кнопки -->
+    <!-- Окно места -->
+    <string name="new_place">Новое место</string>
     <string name="place_address">Адрес</string>
     <string name="place_name">Название</string>
     <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
+    <string name="delete">Удалить</string>
 
     <!-- Поездка -->
-    <string name="stop">Стоп</string>
+    <string name="recording">Запись идёт</string>
     <string name="trip_to">→ %1$s</string>
+    <string name="km_caption">КМ</string>
+    <string name="tile_fuel">Топливо</string>
+    <string name="tile_stood">Стоял</string>
+    <string name="tile_avg">Средняя</string>
+    <string name="tile_max">Максимум</string>
+    <string name="stop">Стоп</string>
     <string name="notif_channel">Запись поездки</string>
     <string name="notif_recording">Идёт запись поездки</string>
     <string name="need_location">Без доступа к местоположению поездку не записать</string>
@@ -28,8 +41,11 @@
     <!-- Единицы -->
     <string name="km_value">%1$s км</string>
     <string name="money_value">%1$s €</string>
+    <string name="speed_value">%1$s км/ч</string>
+    <string name="liters_value">%1$s л</string>
     <string name="duration_hm">%1$d ч %2$02d мин</string>
     <string name="duration_m">%1$d мин</string>
+    <string name="duration_short">%1$d:%2$02d</string>
 
     <!-- Итоги -->
     <string name="week">Неделя</string>
@@ -38,17 +54,90 @@
     <string name="next_period">Позже</string>
     <string name="caption_km">км</string>
     <string name="caption_trips">поездок</string>
-    <string name="caption_euro">€</string>
+    <string name="caption_liters">литров</string>
+    <string name="car_cost">Машина обошлась</string>
+    <string name="legend_fuel">топливо %1$s</string>
+    <string name="legend_wear">износ %1$s</string>
+    <string name="legend_upkeep">содерж. %1$s</string>
     <string name="no_trips">Поездок нет</string>
-    <string name="trip_card">%1$s → %2$s · %3$s · %4$s · %5$s</string>
     <string name="unknown_place">…</string>
-    <string name="delete_trip_question">Удалить поездку?</string>
-    <string name="delete">Удалить</string>
+    <string name="car_link">Машина: расходы</string>
+    <string name="paid_badge">Поездка за деньги</string>
+    <string name="time_range">%1$s · %2$s–%3$s</string>
+    <string name="route">%1$s → %2$s</string>
+    <string name="trip_line">%1$s · %2$s · %3$s</string>
 
-    <!-- Расход -->
-    <string name="fuel">Расход</string>
-    <string name="liters_per_100">Расход, л на 100 км</string>
-    <string name="price_per_liter">Цена литра, €</string>
+    <!-- Поездка подробно -->
+    <string name="from_label">%1$s · откуда</string>
+    <string name="to_label">%1$s · куда</string>
+    <string name="stat_distance">расстояние</string>
+    <string name="stat_duration">в пути</string>
+    <string name="stat_avg">средняя скорость</string>
+    <string name="stat_max">макс. скорость</string>
+    <string name="stat_stood">стоял</string>
+    <string name="stat_liters">топлива</string>
+    <string name="cost_fuel">Топливо</string>
+    <string name="cost_wear">Износ</string>
+    <string name="cost_upkeep">Содержание</string>
+    <string name="cost_total">Итого</string>
+    <string name="paid_trip">Поездка за деньги</string>
+    <string name="to_pay">К оплате</string>
+    <string name="delete_trip">Удалить поездку</string>
+    <string name="delete_trip_question">Удалить поездку?</string>
+
+    <!-- Как посчитано -->
+    <string name="exp_sources">Откуда цифры</string>
+    <string name="exp_change">Изменить цифры</string>
+    <string name="src_you">ты ввёл · Машина</string>
+    <string name="src_gps">записал GPS</string>
+    <string name="src_own_cost">сколько км стоит тебе</string>
+    <string name="exp_not_set">Не задано. Заполни на экране «Машина» — и новые поездки будут это учитывать.</string>
+    <string name="exp_fuel_step1">Шаг 1 · Сколько литров</string>
+    <string name="exp_fuel_f1">км поездки × расход ÷ 100</string>
+    <string name="exp_fuel_step2">Шаг 2 · Сколько денег</string>
+    <string name="exp_fuel_f2">литры × цена литра</string>
+    <string name="exp_per_km_step">Шаг 1 · Сколько стоит 1 км</string>
+    <string name="exp_trip_step">Шаг 2 · Эта поездка</string>
+    <string name="exp_trip_f">км поездки × цена 1 км</string>
+    <string name="exp_wear_f1">(стоит сейчас − продам за) ÷ лет ÷ км в год</string>
+    <string name="exp_upkeep_f1">(страховка + налог + ТО + шины) ÷ км в год</string>
+    <string name="exp_fare_step">Как в такси</string>
+    <string name="exp_fare_f">посадка + км × за км + минуты × за минуту</string>
+    <string name="src_l100">расход, л на 100 км</string>
+    <string name="src_price">цена литра</string>
+    <string name="src_trip_km">км поездки</string>
+    <string name="src_trip_min">минут в пути</string>
+    <string name="src_value">стоит сейчас</string>
+    <string name="src_sell">продам за</string>
+    <string name="src_years">лет до продажи</string>
+    <string name="src_km_year">км в год</string>
+    <string name="src_fare_base">посадка</string>
+    <string name="src_fare_km">за км</string>
+    <string name="src_fare_min">за минуту</string>
+
+    <!-- Машина -->
+    <string name="car_title">Машина</string>
+    <string name="per_km">Каждый км стоит</string>
+    <string name="sec_fuel">Топливо</string>
+    <string name="liters_per_100">л на 100 км</string>
+    <string name="price_per_liter">€ за литр</string>
+    <string name="sec_wear">Износ — машина дешевеет</string>
+    <string name="car_value">Сколько стоит сейчас, €</string>
+    <string name="sell_years">Продам через, лет</string>
+    <string name="sell_price">Продам за, €</string>
+    <string name="sec_upkeep">Содержание за год, €</string>
+    <string name="insurance">Страховка</string>
+    <string name="tax">Налог</string>
+    <string name="service">ТО и ремонт</string>
+    <string name="tires">Шины</string>
+    <string name="sec_mileage">Пробег</string>
+    <string name="km_per_year">Проезжаю за год, км</string>
+    <string name="sec_fare">Поездки за деньги</string>
+    <string name="fare_base">Посадка, €</string>
+    <string name="fare_km">За км, €</string>
+    <string name="fare_min">За минуту, €</string>
+    <string name="fare_hint">По умолчанию за км — сколько км стоит тебе. Пассажир возмещает расходы, а не платит за услугу.</string>
+    <string name="car_hint">Новые цифры действуют на следующие поездки.</string>
 
     <!-- Первый запуск -->
     <string name="setup_fuel_title">Сколько тратит машина?</string>

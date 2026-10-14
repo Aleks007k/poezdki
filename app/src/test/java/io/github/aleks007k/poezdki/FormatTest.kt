@@ -21,7 +21,7 @@ class FormatTest {
     @Test
     fun cost() {
         // 87 км × 7 л/100 × 1,84 € = 11,21 €
-        assertEquals("11,21", Format.money(Format.cost(87_000.0, 7.0, 1.84)))
+        assertEquals("11,21", Format.money(CarCosts(litersPer100 = 7.0, pricePerLiter = 1.84).fuel(87_000.0)))
     }
 
     @Test

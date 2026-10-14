@@ -6,15 +6,16 @@ import android.content.Context
 class Prefs(context: Context) {
     private val p = context.applicationContext.getSharedPreferences("poezdki", Context.MODE_PRIVATE)
 
-    var litersPer100: Double
-        get() = p.getString("l100", null)?.toDoubleOrNull() ?: 0.0
-        set(v) = p.edit().putString("l100", v.toString()).apply()
+    /** Все расходы машины (экран «Машина»). */
+    var car: CarCosts
+        get() = CarCosts.decode(p.getString("car", null)) ?: CarCosts(
+            // Первая версия хранила только расход и цену.
+            litersPer100 = p.getString("l100", null)?.toDoubleOrNull() ?: 0.0,
+            pricePerLiter = p.getString("price", null)?.toDoubleOrNull() ?: 0.0,
+        )
+        set(v) = p.edit().putString("car", v.encode()).apply()
 
-    var pricePerLiter: Double
-        get() = p.getString("price", null)?.toDoubleOrNull() ?: 0.0
-        set(v) = p.edit().putString("price", v.toString()).apply()
-
-    val hasFuelSettings get() = litersPer100 > 0 && pricePerLiter > 0
+    val hasFuelSettings get() = car.let { it.litersPer100 > 0 && it.pricePerLiter > 0 }
 
     /** Шаги первого запуска, которые уже показывали (чтобы не спрашивать по кругу). */
     fun wasAsked(step: String) = p.getBoolean("asked_$step", false)

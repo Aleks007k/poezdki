@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Poezdki" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+    <!-- Тёмная тема всегда: «ночная приборная панель». -->
+    <style name="Theme.Poezdki" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
     </style>
 </resources>

@@ -146,4 +146,20 @@ class TripTrackerTest {
         val t = stand(tr, t0, 0.0, 180)
         assertNull(tr.tick(t))
     }
+
+    @Test
+    fun maxSpeedAndStoppedTime() {
+        val tr = TripTracker(t0, null)
+        var (t, m) = drive(tr, t0, 0.0, 120, 50.0)
+        val r1 = drive(tr, t, m, 60, 90.0)
+        t = stand(tr, r1.first, r1.second, 120) // пробка 2 минуты
+        val r2 = drive(tr, t, r1.second, 60, 40.0)
+        assertEquals(90.0, tr.maxSpeedKmh, 0.001)
+        assertEquals(119_000.0, tr.stoppedMs.toDouble(), 2_000.0)
+        // Последняя остановка (конец поездки) в «стоял» не входит.
+        stand(tr, r2.first, r2.second, 60)
+        val end = tr.stopNow(r2.first + 61_000)
+        assertEquals(119_000.0, end.stoppedMs.toDouble(), 2_000.0)
+        assertEquals(90.0, end.maxSpeedKmh, 0.001)
+    }
 }
