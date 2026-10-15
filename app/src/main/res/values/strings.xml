@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ВСЕ тексты приложения — здесь. Для перевода: скопировать файл в values-de и т. п. -->
 <resources>
-    <string name="app_name">Борт#1</string>
+    <string name="app_name">Борт\u00A0№1</string>
     <string name="back">Назад</string>
 
     <!-- Главный экран -->
@@ -55,13 +55,13 @@
     <string name="caption_km">км</string>
     <string name="caption_trips">поездок</string>
     <string name="caption_liters">литров</string>
-    <string name="car_cost">VIP Борт#1 обошёлся</string>
+    <string name="car_cost">VIP Борт\u00A0№1 обошёлся</string>
     <string name="legend_fuel">топливо %1$s</string>
     <string name="legend_wear">износ %1$s</string>
     <string name="legend_upkeep">содерж. %1$s</string>
     <string name="no_trips">Поездок нет</string>
     <string name="unknown_place">…</string>
-    <string name="car_link">VIP Борт#1: расходы</string>
+    <string name="car_link">VIP Борт\u00A0№1: расходы</string>
     <string name="paid_badge">Поездка за деньги</string>
     <string name="time_range">%1$s · %2$s–%3$s</string>
     <string name="route">%1$s → %2$s</string>
@@ -88,11 +88,11 @@
     <!-- Как посчитано -->
     <string name="exp_sources">Откуда цифры</string>
     <string name="exp_change">Изменить цифры</string>
-    <string name="src_you">ты ввёл · VIP Борт#1</string>
+    <string name="src_you">ты ввёл · VIP Борт\u00A0№1</string>
     <string name="src_trip_day">на день поездки</string>
     <string name="src_gps">записал GPS</string>
     <string name="src_own_cost">сколько км стоит тебе</string>
-    <string name="exp_not_set">Не задано. Заполни на экране «VIP Борт#1» — и поездки будут это учитывать.</string>
+    <string name="exp_not_set">Не задано. Заполни на экране «VIP Борт\u00A0№1» — и поездки будут это учитывать.</string>
     <string name="exp_fuel_step1">Шаг 1 · Сколько литров</string>
     <string name="exp_fuel_f1">км поездки × расход ÷ 100</string>
     <string name="exp_fuel_step2">Шаг 2 · Сколько денег</string>
@@ -117,7 +117,7 @@
     <string name="src_fare_min">за минуту</string>
 
     <!-- Машина -->
-    <string name="car_title">VIP Борт#1</string>
+    <string name="car_title">VIP Борт\u00A0№1</string>
     <string name="per_km">Каждый км стоит</string>
     <string name="sec_fuel">Топливо</string>
     <string name="liters_per_100">л на 100 км</string>
