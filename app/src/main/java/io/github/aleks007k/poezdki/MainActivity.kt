@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Шаги первого запуска. Каждый показывается один раз. */
-enum class SetupStep { FUEL, LOCATION, BACKGROUND, NOTIFICATIONS, BATTERY }
+enum class SetupStep { FUEL, LOCATION, BACKGROUND, ACTIVITY, NOTIFICATIONS, BATTERY }
 
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: Prefs
@@ -58,7 +58,10 @@ class MainActivity : ComponentActivity() {
         }
 
     private val askOne =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshSetup() }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            refreshSetup()
+            AutoDetect.register(this)
+        }
 
     private val askGps =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
@@ -92,6 +95,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         refreshSetup()
         TripService.resumeIfNeeded(this)
+        AutoDetect.register(this)
     }
 
     // --- Первый запуск ---
@@ -102,6 +106,8 @@ class MainActivity : ComponentActivity() {
             !hasFineLocation() && !prefs.wasAsked("loc") -> SetupStep.LOCATION
             Build.VERSION.SDK_INT >= 29 && hasFineLocation() && !granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION) &&
                 !prefs.wasAsked("bg") -> SetupStep.BACKGROUND
+            Build.VERSION.SDK_INT >= 29 && !granted(Manifest.permission.ACTIVITY_RECOGNITION) &&
+                !prefs.wasAsked("activity") -> SetupStep.ACTIVITY
             Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS) &&
                 !prefs.wasAsked("notif") -> SetupStep.NOTIFICATIONS
             !batteryUnrestricted() && !prefs.wasAsked("battery") -> SetupStep.BATTERY
@@ -132,6 +138,10 @@ class MainActivity : ComponentActivity() {
             SetupStep.BACKGROUND -> {
                 prefs.markAsked("bg")
                 if (Build.VERSION.SDK_INT >= 29) askOne.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            }
+            SetupStep.ACTIVITY -> {
+                prefs.markAsked("activity")
+                if (Build.VERSION.SDK_INT >= 29) askOne.launch(Manifest.permission.ACTIVITY_RECOGNITION)
             }
             SetupStep.NOTIFICATIONS -> {
                 prefs.markAsked("notif")

@@ -38,6 +38,15 @@
     <string name="need_location">Без доступа к местоположению поездку не записать</string>
     <string name="need_gps">Без GPS поездку не записать</string>
 
+    <!-- Автозапись: вопрос в уведомлении -->
+    <string name="q_channel">Вопросы о поездке</string>
+    <string name="q_title">Едешь на своём авто?</string>
+    <string name="q_text">Поездка уже записывается. Не ответишь — сохранится.</string>
+    <string name="q_title_done">Это было твоё авто?</string>
+    <string name="q_text_done">Поездка %1$s км сохранена. «НЕТ» — удалю её.</string>
+    <string name="yes">ДА</string>
+    <string name="no">НЕТ</string>
+
     <!-- Единицы -->
     <string name="km_value">%1$s км</string>
     <string name="money_value">%1$s €</string>
@@ -159,6 +168,7 @@
     <string name="next">Далее</string>
     <string name="perm_location_text">Километры считаются по GPS. Разреши доступ к местоположению.</string>
     <string name="perm_background_text">Чтобы запись шла, когда открыт Google Maps или погас экран, выбери «Разрешить в любом режиме».</string>
+    <string name="perm_activity_text">Чтобы поездки записывались сами — даже если не открыл приложение, — разреши «Физическая активность». Так телефон поймёт, что ты едешь в машине.</string>
     <string name="perm_notifications_text">Разреши уведомления — так видно, что идёт запись поездки.</string>
     <string name="battery_text">Чтобы запись не обрывалась, разреши работу в фоне.\n\nОткрой «Аккумулятор» и выбери «Без ограничений».</string>
     <string name="allow">Разрешить</string>

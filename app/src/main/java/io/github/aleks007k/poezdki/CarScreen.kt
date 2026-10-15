@@ -198,6 +198,7 @@ fun SetupStepScreen(step: SetupStep, onAction: () -> Unit, onBatteryDone: () -> 
     val (text, button) = when (step) {
         SetupStep.LOCATION -> R.string.perm_location_text to R.string.allow
         SetupStep.BACKGROUND -> R.string.perm_background_text to R.string.open_settings
+        SetupStep.ACTIVITY -> R.string.perm_activity_text to R.string.allow
         SetupStep.NOTIFICATIONS -> R.string.perm_notifications_text to R.string.allow
         else -> R.string.battery_text to R.string.open_settings
     }

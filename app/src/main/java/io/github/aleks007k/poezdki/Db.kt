@@ -85,7 +85,7 @@ class Db private constructor(context: Context) :
 
     // --- Поездки ---
 
-    fun insertTrip(t: Trip) {
+    fun insertTrip(t: Trip): Long =
         writableDatabase.insert("trips", null, ContentValues().apply {
             put("start_time", t.startTime)
             put("end_time", t.endTime)
@@ -102,7 +102,6 @@ class Db private constructor(context: Context) :
             put("costs", t.costs.encode())
             put("paid", if (t.paid) 1 else 0)
         })
-    }
 
     fun trip(id: Long): Trip? =
         readableDatabase.rawQuery("SELECT * FROM trips WHERE id = ?", arrayOf(id.toString()))

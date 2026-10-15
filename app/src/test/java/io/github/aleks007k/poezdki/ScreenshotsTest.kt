@@ -125,4 +125,9 @@ class ScreenshotsTest {
     fun setupBattery() = shot("7b_setup_battery") {
         SetupStepScreen(SetupStep.BATTERY, no, no)
     }
+
+    @Test
+    fun setupActivity() = shot("7c_setup_activity") {
+        SetupStepScreen(SetupStep.ACTIVITY, no, no)
+    }
 }

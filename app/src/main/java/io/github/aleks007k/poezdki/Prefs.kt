@@ -36,9 +36,26 @@ class Prefs(context: Context) {
             )
         } else null
 
-    fun startTrip(start: Long, destination: String, target: LatLon?) {
+    /** Поездка начата сама (Android заметил «в машине»), а не кнопкой. */
+    val activeAuto get() = p.getBoolean("trip_auto", false)
+
+    /** Автопоездка: уже спросили «На своём авто?» / уже ответили «Да». */
+    var autoAsked: Boolean
+        get() = p.getBoolean("auto_asked", false)
+        set(v) { p.edit().putBoolean("auto_asked", v).commit() }
+    var autoConfirmed: Boolean
+        get() = p.getBoolean("auto_yes", false)
+        set(v) { p.edit().putBoolean("auto_yes", v).commit() }
+
+    /** Автопоездка закончилась без ответа: её номер, чтобы «Нет» мог её удалить. */
+    var pendingAutoTripId: Long
+        get() = p.getLong("auto_pending", 0L)
+        set(v) { p.edit().putLong("auto_pending", v).commit() }
+
+    fun startTrip(start: Long, destination: String, target: LatLon?, auto: Boolean = false) {
         p.edit().putLong("trip_start", start).putString("trip_dest", destination)
-            .remove("trip_lat").remove("trip_lon").commit()
+            .remove("trip_lat").remove("trip_lon")
+            .putBoolean("trip_auto", auto).remove("auto_asked").remove("auto_yes").commit()
         target?.let { setTarget(it) }
     }
 
@@ -48,6 +65,7 @@ class Prefs(context: Context) {
     }
 
     fun clearTrip() {
-        p.edit().remove("trip_start").remove("trip_dest").remove("trip_lat").remove("trip_lon").commit()
+        p.edit().remove("trip_start").remove("trip_dest").remove("trip_lat").remove("trip_lon")
+            .remove("trip_auto").remove("auto_asked").remove("auto_yes").commit()
     }
 }
