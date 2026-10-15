@@ -2,6 +2,7 @@ package io.github.aleks007k.poezdki
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -96,6 +98,7 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
             Field(stringResource(R.string.liters_per_100), l100, { l100 = it }, Modifier.weight(1f))
             Field(stringResource(R.string.price_per_liter), price, { price = it }, Modifier.weight(1f))
         }
+        HowTo(stringResource(R.string.how_fuel))
 
         Section(stringResource(R.string.sec_wear), C.Blue)
         Field(stringResource(R.string.car_value), value, { value = it }, Modifier.fillMaxWidth())
@@ -103,6 +106,7 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
             Field(stringResource(R.string.sell_years), years, { years = it }, Modifier.weight(1f))
             Field(stringResource(R.string.sell_price), sell, { sell = it }, Modifier.weight(1f))
         }
+        HowTo(stringResource(R.string.how_wear))
 
         Section(stringResource(R.string.sec_upkeep), C.Teal)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -113,9 +117,11 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
             Field(stringResource(R.string.service), service, { service = it }, Modifier.weight(1f))
             Field(stringResource(R.string.tires), tires, { tires = it }, Modifier.weight(1f))
         }
+        HowTo(stringResource(R.string.how_upkeep))
 
         Section(stringResource(R.string.sec_mileage), C.Muted)
         Field(stringResource(R.string.km_per_year), kmYear, { kmYear = it }, Modifier.fillMaxWidth())
+        HowTo(stringResource(R.string.how_mileage))
 
         Section(stringResource(R.string.sec_fare), C.Amber)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -124,11 +130,43 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
                 placeholder = Format.number(edited.totalPerKm, 2))
             Field(stringResource(R.string.fare_min), fareMin, { fareMin = it }, Modifier.weight(1f), placeholder = "0")
         }
-        Text(stringResource(R.string.fare_hint), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
+        HowTo(stringResource(R.string.how_fare))
 
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.car_hint), color = C.Muted, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         AmberButton(stringResource(R.string.save), onClick = { onSave(edited) }, enabled = valid)
+        Text(
+            stringResource(R.string.version, appVersion(context)), color = C.Dim, fontSize = 12.sp,
+            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+private fun appVersion(context: android.content.Context): String = try {
+    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+} catch (e: Exception) {
+    "?"
+}
+
+/** «Как узнать?» — нажал, раскрылась подсказка, как посчитать цифры. */
+@Composable
+private fun HowTo(text: String) {
+    var open by rememberSaveable(text) { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable { open = !open }.padding(vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.how_to), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(4.dp))
+            Ico(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down, C.Amber, 18.dp)
+        }
+        if (open) {
+            Text(
+                text, color = C.Soft, fontSize = 15.sp, lineHeight = 22.sp,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(C.Panel).padding(14.dp),
+            )
+        }
     }
 }
 

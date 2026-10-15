@@ -29,6 +29,13 @@ data class Trip(
     val upkeep get() = costs.upkeep(distanceM)
     val total get() = costs.total(distanceM)
     val fare get() = costs.fare(distanceM, durationMs)
+    /**
+     * Износ, содержание и тариф — оценки за год: берём текущие (их уточняют).
+     * Расход и цену топлива — на день поездки (цена меняется).
+     */
+    fun withCarCosts(current: CarCosts) =
+        copy(costs = current.copy(litersPer100 = costs.litersPer100, pricePerLiter = costs.pricePerLiter))
+
     val avgSpeedKmh get() = if (durationMs > 0) distanceM / 1000.0 / (durationMs / 3_600_000.0) else 0.0
 }
 

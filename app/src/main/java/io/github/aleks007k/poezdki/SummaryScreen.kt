@@ -1,6 +1,7 @@
 package io.github.aleks007k.poezdki
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,7 +46,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun SummaryScreen(db: Db, onTrip: (Long) -> Unit, onCar: () -> Unit, onBack: () -> Unit) {
+fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Unit, onBack: () -> Unit) {
     var monthMode by rememberSaveable { mutableStateOf(false) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
     val version by AppState.dataVersion.collectAsState()
@@ -54,11 +55,11 @@ fun SummaryScreen(db: Db, onTrip: (Long) -> Unit, onCar: () -> Unit, onBack: () 
 
     var trips by remember { mutableStateOf<List<Trip>>(emptyList()) }
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
-    LaunchedEffect(period, version) {
+    LaunchedEffect(period, version, car) {
         val loaded = withContext(Dispatchers.IO) {
             db.trips(period.startMillis(zone), period.endMillis(zone)) to db.places()
         }
-        trips = loaded.first
+        trips = loaded.first.map { it.withCarCosts(car) }
         places = loaded.second
     }
     SummaryContent(
@@ -122,8 +123,9 @@ fun SummaryContent(
         }
 
         Row(
-            Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(14.dp)).clickable(onClick = onCar)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+            Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(16.dp))
+                .border(1.dp, C.Line, RoundedCornerShape(16.dp)).clickable(onClick = onCar)
+                .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Ico(R.drawable.ic_car, C.Muted, 20.dp)

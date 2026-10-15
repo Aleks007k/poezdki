@@ -47,15 +47,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun TripDetailScreen(db: Db, tripId: Long, activity: MainActivity, onBack: () -> Unit, onCar: () -> Unit) {
+fun TripDetailScreen(db: Db, tripId: Long, car: CarCosts, activity: MainActivity, onBack: () -> Unit, onCar: () -> Unit) {
     val context = LocalContext.current
     val version by AppState.dataVersion.collectAsState()
     var trip by remember { mutableStateOf<Trip?>(null) }
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
     var loaded by remember { mutableStateOf(false) }
-    LaunchedEffect(tripId, version) {
+    LaunchedEffect(tripId, version, car) {
         val r = withContext(Dispatchers.IO) { db.trip(tripId) to db.places() }
-        trip = r.first
+        trip = r.first?.withCarCosts(car)
         places = r.second
         loaded = true
     }

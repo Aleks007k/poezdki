@@ -55,13 +55,13 @@
     <string name="caption_km">км</string>
     <string name="caption_trips">поездок</string>
     <string name="caption_liters">литров</string>
-    <string name="car_cost">Машина обошлась</string>
+    <string name="car_cost">VIP Борт#1 обошёлся</string>
     <string name="legend_fuel">топливо %1$s</string>
     <string name="legend_wear">износ %1$s</string>
     <string name="legend_upkeep">содерж. %1$s</string>
     <string name="no_trips">Поездок нет</string>
     <string name="unknown_place">…</string>
-    <string name="car_link">Машина: расходы</string>
+    <string name="car_link">VIP Борт#1: расходы</string>
     <string name="paid_badge">Поездка за деньги</string>
     <string name="time_range">%1$s · %2$s–%3$s</string>
     <string name="route">%1$s → %2$s</string>
@@ -88,10 +88,11 @@
     <!-- Как посчитано -->
     <string name="exp_sources">Откуда цифры</string>
     <string name="exp_change">Изменить цифры</string>
-    <string name="src_you">ты ввёл · Машина</string>
+    <string name="src_you">ты ввёл · VIP Борт#1</string>
+    <string name="src_trip_day">на день поездки</string>
     <string name="src_gps">записал GPS</string>
     <string name="src_own_cost">сколько км стоит тебе</string>
-    <string name="exp_not_set">Не задано. Заполни на экране «Машина» — и новые поездки будут это учитывать.</string>
+    <string name="exp_not_set">Не задано. Заполни на экране «VIP Борт#1» — и поездки будут это учитывать.</string>
     <string name="exp_fuel_step1">Шаг 1 · Сколько литров</string>
     <string name="exp_fuel_f1">км поездки × расход ÷ 100</string>
     <string name="exp_fuel_step2">Шаг 2 · Сколько денег</string>
@@ -116,7 +117,7 @@
     <string name="src_fare_min">за минуту</string>
 
     <!-- Машина -->
-    <string name="car_title">Машина</string>
+    <string name="car_title">VIP Борт#1</string>
     <string name="per_km">Каждый км стоит</string>
     <string name="sec_fuel">Топливо</string>
     <string name="liters_per_100">л на 100 км</string>
@@ -136,8 +137,22 @@
     <string name="fare_base">Посадка, €</string>
     <string name="fare_km">За км, €</string>
     <string name="fare_min">За минуту, €</string>
-    <string name="fare_hint">По умолчанию за км — сколько км стоит тебе. Пассажир возмещает расходы, а не платит за услугу.</string>
-    <string name="car_hint">Новые цифры действуют на следующие поездки.</string>
+    <string name="car_hint">Износ, содержание и тариф действуют на все поездки. Расход и цена топлива — только на новые: цена меняется, и каждая поездка помнит свою.</string>
+    <string name="version">Версия %1$s</string>
+    <string name="how_to">Как узнать?</string>
+    <string name="how_fuel">Расход — средний, его показывает бортовой компьютер машины.
+Цена — с последнего чека с заправки. Цена изменилась — просто поправь её здесь.</string>
+    <string name="how_wear">«Сколько стоит сейчас» — найди объявления о такой же машине (год, пробег, мотор), например на mobile.de, autoscout24 или avito, и возьми среднюю цену.
+«Продам за» — так же, но машины на столько лет старше, через сколько собираешься продать.
+Для ориентира: обычная машина за 5 лет теряет примерно 40–50 % цены.</string>
+    <string name="how_upkeep">Страховка — сумма за год из полиса.
+Налог — сумма за год из письма налоговой.
+ТО и ремонт — сложи чеки за прошлый год. Чеков нет — спроси цену планового ТО в сервисе.
+Шины — цена комплекта ÷ сколько лет он служит, плюс шиномонтажи за год.</string>
+    <string name="how_mileage">Посмотри одометр сейчас и сколько было год назад (например, в чеке с ТО). Разница — пробег за год.</string>
+    <string name="how_fare">Как в такси: посадка — фиксированная сумма за поездку, за км — за расстояние, за минуту — за время в пути (пробки, ожидание).
+Если подвозишь знакомых, обычно оставляют посадку и минуты 0, а «за км» — твою стоимость км: пассажир просто возмещает расходы.
+Брать больше своих расходов — это уже перевозка за деньги: во многих странах для неё нужна лицензия.</string>
 
     <!-- Первый запуск -->
     <string name="setup_fuel_title">Сколько тратит машина?</string>

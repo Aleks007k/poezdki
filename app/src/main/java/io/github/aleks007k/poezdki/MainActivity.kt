@@ -112,6 +112,7 @@ class MainActivity : ComponentActivity() {
     fun saveFuel(litersPer100: Double, pricePerLiter: Double) {
         prefs.car = prefs.car.copy(litersPer100 = litersPer100, pricePerLiter = pricePerLiter)
         refreshSetup()
+        AppState.dataChanged()
     }
 
     /** Экран «Машина». Действует на новые поездки. */

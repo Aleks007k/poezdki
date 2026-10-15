@@ -87,8 +87,8 @@ fun explain(context: Context, t: Trip, kind: CostKind): Explanation {
                 Step(s(R.string.exp_fuel_step2), s(R.string.exp_fuel_f2), "${n(t.liters)} × ${n(c.pricePerLiter, 3)} = ${Format.money(t.fuel)} €"),
             ),
             listOf(
-                Source("${n(c.litersPer100)} л", s(R.string.src_l100), you),
-                Source("${n(c.pricePerLiter, 3)} €", s(R.string.src_price), you),
+                Source("${n(c.litersPer100)} л", s(R.string.src_l100), s(R.string.src_trip_day)),
+                Source("${n(c.pricePerLiter, 3)} €", s(R.string.src_price), s(R.string.src_trip_day)),
                 tripKm,
             ),
             notSet = false,
