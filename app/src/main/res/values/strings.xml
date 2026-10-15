@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ВСЕ тексты приложения — здесь. Для перевода: скопировать файл в values-de и т. п. -->
 <resources>
-    <string name="app_name">Поездки</string>
+    <string name="app_name">Борт#1</string>
     <string name="back">Назад</string>
 
     <!-- Главный экран -->
