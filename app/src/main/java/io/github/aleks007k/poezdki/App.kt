@@ -23,7 +23,7 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
     PoezdkiTheme {
         Box(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp)) {
             val live by AppState.live.collectAsState()
-            // Чтобы после сохранения «VIP Борт#1» экраны пересчитались.
+            // Чтобы после сохранения «VIP Борт №1» экраны пересчитались.
             val version by AppState.dataVersion.collectAsState()
             val car = remember(version) { prefs.car }
             var screen by rememberSaveable { mutableStateOf(Screen.MAIN) }
