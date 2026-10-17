@@ -6,6 +6,7 @@
 
     <!-- Главный экран -->
     <string name="where">Куда</string>
+    <string name="record">Запись</string>
     <string name="dest_hint">Улица, город…</string>
     <string name="go">Поехали</string>
     <string name="home">Дом</string>
@@ -158,6 +159,14 @@
     <string name="fare_min">За минуту, €</string>
     <string name="car_hint">Износ, содержание и тариф действуют на все поездки. Расход и цена топлива — только на новые: цена меняется, и каждая поездка помнит свою.</string>
     <string name="version">Версия %1$s</string>
+    <string name="auto_title">Автозапись</string>
+    <string name="auto_on">Включена: запись начнётся сама, когда телефон заметит, что ты в машине.</string>
+    <string name="auto_last">Последний сигнал «в машине»: %1$s</string>
+    <string name="auto_never">Сигнала «в машине» пока не было.</string>
+    <string name="auto_no_location">Выключена: нет доступа к местоположению.</string>
+    <string name="auto_no_background">Выключена: в «Местоположение» нужно выбрать «Разрешить в любом режиме».</string>
+    <string name="auto_no_activity">Выключена: нет разрешения «Физическая активность».</string>
+    <string name="auto_fix">Открыть разрешения</string>
     <string name="how_to">Как узнать?</string>
     <string name="wear_zero_price">Износ 0: «продам за» не меньше «стоит сейчас». Впиши, за сколько реально продашь.</string>
     <string name="wear_zero_years">Износ 0: впиши, через сколько лет продашь.</string>

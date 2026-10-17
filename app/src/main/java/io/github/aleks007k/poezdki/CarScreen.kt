@@ -39,7 +39,15 @@ private fun Double.input() = if (this > 0) Format.forInput(this) else ""
 
 /** Экран «Машина»: все расходы, как считают автоклубы. Пустое поле = не считается. */
 @Composable
-fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, systemBack: Boolean = true) {
+fun CarScreen(
+    car: CarCosts,
+    onBack: () -> Unit,
+    onSave: (CarCosts) -> Unit,
+    systemBack: Boolean = true,
+    autoProblem: Int? = null,
+    lastVehicleSignal: Long = 0L,
+    onFixAuto: () -> Unit = {},
+) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
     var l100City by rememberSaveable { mutableStateOf(car.litersCity.input()) }
@@ -142,6 +150,24 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
             Field(stringResource(R.string.fare_min), fareMin, { fareMin = it }, Modifier.weight(1f), placeholder = "0")
         }
         HowTo(stringResource(R.string.how_fare))
+
+        // Автозапись: работает ли и когда Android последний раз сказал «в машине».
+        Section(stringResource(R.string.auto_title), C.Muted)
+        Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (autoProblem != null) {
+                    Text(stringResource(autoProblem), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.auto_fix), onFixAuto)
+                } else {
+                    Text(stringResource(R.string.auto_on), color = C.Teal, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (lastVehicleSignal > 0) stringResource(R.string.auto_last, shortDate(lastVehicleSignal) + ", " + timeOf(lastVehicleSignal))
+                        else stringResource(R.string.auto_never),
+                        color = C.Soft, fontSize = 14.sp,
+                    )
+                }
+            }
+        }
 
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.car_hint), color = C.Muted, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

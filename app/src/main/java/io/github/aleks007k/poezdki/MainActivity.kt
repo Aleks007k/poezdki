@@ -156,7 +156,7 @@ class MainActivity : ComponentActivity() {
         refreshSetup()
     }
 
-    private fun openAppSettings() {
+    fun openAppSettings() {
         try {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
         } catch (e: ActivityNotFoundException) {
@@ -165,6 +165,9 @@ class MainActivity : ComponentActivity() {
     }
 
     // --- Поездка ---
+
+    /** Кнопка «● Запись»: начать запись сейчас, без адреса и навигации. */
+    fun recordNow() = go("", null)
 
     /** Стрелка или кнопка места: включить GPS, начать запись, открыть Google Maps. */
     fun go(destination: String, target: LatLon?) {
@@ -197,6 +200,8 @@ class MainActivity : ComponentActivity() {
 
     private fun startTrip(destination: String, target: LatLon?) {
         TripService.start(this, destination, target)
+        // Кнопка «Запись»: без адреса — просто записываем, Google Maps не открываем.
+        if (destination.isBlank()) return
         if (target == null) {
             // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
             lifecycleScope.launch {

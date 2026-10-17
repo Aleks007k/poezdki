@@ -53,6 +53,21 @@ object Config {
     /** От этой — трасса (расход «за городом»). Между — плавно. */
     const val HIGHWAY_SPEED_KMH = 80.0
 
+    /** Автозапись, запасной канал: как часто Android сообщает, чем ты занят. */
+    const val AUTO_SAMPLE_MS = 90_000L
+
+    /** Автозапись: насколько Android должен быть уверен, что ты «в машине» (0–100). */
+    const val AUTO_MIN_CONFIDENCE = 75
+
+    /** После «НЕТ» не спрашивать снова столько времени (автобус, такси). */
+    const val AUTO_MUTE_AFTER_NO_MS = 30 * 60_000L
+
+    /** После «Стоп» вручную не начинать автозапись столько времени. */
+    const val AUTO_MUTE_AFTER_STOP_MS = 20 * 60_000L
+
+    /** После ложной тревоги не включать GPS столько времени. */
+    const val AUTO_MUTE_AFTER_FALSE_MS = 10 * 60_000L
+
     /** Как часто просим у GPS новую точку. */
     const val GPS_INTERVAL_MS = 1_000L
 

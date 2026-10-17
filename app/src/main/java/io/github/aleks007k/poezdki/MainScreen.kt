@@ -71,6 +71,7 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
     }
     MainContent(
         places, weekMeters,
+        onRecord = activity::recordNow,
         onGo = activity::go, onSavePlace = activity::savePlace, onAddPlace = activity::addPlace,
         onDeletePlace = activity::deletePlace, onSummary = onSummary,
     )
@@ -81,6 +82,7 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
 fun MainContent(
     places: Map<Int, Place>,
     weekMeters: Double,
+    onRecord: () -> Unit,
     onGo: (String, LatLon?) -> Unit,
     onSavePlace: (Int, String?, String) -> Unit,
     onAddPlace: (String, String) -> Unit,
@@ -109,7 +111,19 @@ fun MainContent(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Big(stringResource(R.string.where), 34)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Big(stringResource(R.string.where), 34, modifier = Modifier.weight(1f))
+                // Записать поездку прямо сейчас — без адреса (если автозапись не сработала).
+                Row(
+                    Modifier.clip(RoundedCornerShape(22.dp)).background(C.Amber).clickable(onClick = onRecord)
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(12.dp).clip(RoundedCornerShape(6.dp)).background(C.OnAmber))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.record), color = C.OnAmber, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                }
+            }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Panel(Modifier.weight(1f).height(72.dp), radius = 20.dp, padding = 0.dp) {

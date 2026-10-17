@@ -66,12 +66,12 @@ class ScreenshotsTest {
 
     @Test
     fun main() = shot("1_main") {
-        MainContent(places, 142_000.0, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(places, 142_000.0, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
     fun mainEmpty() = shot("1b_main_empty") {
-        MainContent(emptyMap(), 0.0, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(emptyMap(), 0.0, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
@@ -113,7 +113,7 @@ class ScreenshotsTest {
 
     @Test
     fun carScreen() = shot("6_car") {
-        CarScreen(car, no, {}, systemBack = false)
+        CarScreen(car, no, {}, systemBack = false, lastVehicleSignal = at(14, 7, 52))
     }
 
     @Test

@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.ActivityRecognition
+import com.google.android.gms.location.ActivityRecognitionResult
 import com.google.android.gms.location.ActivityTransition
 import com.google.android.gms.location.ActivityTransitionRequest
 import com.google.android.gms.location.ActivityTransitionResult
@@ -44,29 +45,55 @@ object AutoDetect {
             )
         )
         try {
-            ActivityRecognition.getClient(context).requestActivityTransitionUpdates(request, pendingIntent(context))
+            val client = ActivityRecognition.getClient(context)
+            // 1) «Сел в машину» — одно событие в момент посадки.
+            client.requestActivityTransitionUpdates(request, pendingIntent(context, 20))
+            // 2) Запасной канал: раз в 1,5 минуты «чем ты сейчас занят» — если событие (1) потерялось.
+            client.requestActivityUpdates(Config.AUTO_SAMPLE_MS, pendingIntent(context, 21))
         } catch (e: Exception) {
             // Нет сервисов Google на телефоне — автозаписи не будет, остальное работает.
         }
     }
 
-    private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
-        context, 20, Intent(context, TransitionReceiver::class.java),
+    /** Что мешает автозаписи (для строки состояния). null — всё в порядке. */
+    fun problem(context: Context): Int? {
+        fun ok(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
+        return when {
+            !ok(Manifest.permission.ACCESS_FINE_LOCATION) -> R.string.auto_no_location
+            Build.VERSION.SDK_INT >= 29 && !ok(Manifest.permission.ACCESS_BACKGROUND_LOCATION) -> R.string.auto_no_background
+            Build.VERSION.SDK_INT >= 29 && !ok(Manifest.permission.ACTIVITY_RECOGNITION) -> R.string.auto_no_activity
+            else -> null
+        }
+    }
+
+    private fun pendingIntent(context: Context, code: Int): PendingIntent = PendingIntent.getBroadcast(
+        context, code, Intent(context, TransitionReceiver::class.java),
         // Сервисы Google дописывают в него событие — поэтому изменяемый.
         PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0),
     )
 }
 
-/** Android сообщил: «в машине». */
+/** Android сообщил: «в машине» (событие посадки или очередная проверка). */
 class TransitionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (!ActivityTransitionResult.hasResult(intent)) return
-        val result = ActivityTransitionResult.extractResult(intent) ?: return
-        val inCar = result.transitionEvents.any {
-            it.activityType == DetectedActivity.IN_VEHICLE &&
-                it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER
+        val inCar = when {
+            ActivityTransitionResult.hasResult(intent) ->
+                ActivityTransitionResult.extractResult(intent)?.transitionEvents.orEmpty().any {
+                    it.activityType == DetectedActivity.IN_VEHICLE &&
+                        it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER
+                }
+            ActivityRecognitionResult.hasResult(intent) ->
+                (ActivityRecognitionResult.extractResult(intent)?.getActivityConfidence(DetectedActivity.IN_VEHICLE) ?: 0) >=
+                    Config.AUTO_MIN_CONFIDENCE
+            else -> false
         }
-        if (!inCar || Prefs(context).hasActiveTrip || !AutoDetect.permitted(context)) return
+        if (!inCar) return
+        val prefs = Prefs(context)
+        prefs.lastVehicleSignal = System.currentTimeMillis()
+        // Запись уже идёт (служба жива) или недавно сказали «НЕТ» / «Стоп» — ничего не делаем.
+        if (TripService.running && prefs.hasActiveTrip) return
+        if (System.currentTimeMillis() < prefs.autoMuteUntil) return
+        if (!AutoDetect.permitted(context)) return
         if (!locationOn(context)) {
             // Геолокация выключена — скорость не узнать и поездку не записать. Скажем об этом.
             Questions.askLocationOff(context)

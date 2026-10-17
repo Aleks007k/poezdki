@@ -48,6 +48,7 @@ class TripService : Service(), LocationListener {
 
     override fun onCreate() {
         super.onCreate()
+        running = true
         prefs = Prefs(this)
         db = Db.get(this)
         createChannel()
@@ -73,11 +74,24 @@ class TripService : Service(), LocationListener {
             }
             // Android заметил «в машине». Ручную поездку не трогаем.
             ACTION_AUTO -> if (tracker == null) {
-                if (prefs.hasActiveTrip) restoreOrStop() else newTrip("", null, auto = true)
+                if (prefs.hasActiveTrip) {
+                    // Осталась прошлая запись (Android закрыл приложение). Ещё идёт — продолжаем,
+                    // давно кончилась — сохраняем её и начинаем новую.
+                    restore()
+                    val end = tracker?.tick(System.currentTimeMillis())
+                    if (end == null) {
+                        begin()
+                        return START_STICKY
+                    }
+                    save(end)
+                    clearTrip()
+                }
+                newTrip("", null, auto = true)
             }
             // «НЕТ» на вопросе «На своём авто?»: выключить GPS, ничего не сохранять.
             ACTION_DISCARD -> {
                 Questions.cancel(this)
+                prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
                 stopEverything()
             }
             ACTION_TARGET -> {
@@ -88,6 +102,8 @@ class TripService : Service(), LocationListener {
                 if (tracker == null) restoreOrStop()
             }
             ACTION_STOP -> {
+                // Остановил сам — значит приехал; не начинать сразу автозапись снова.
+                prefs.muteAuto(Config.AUTO_MUTE_AFTER_STOP_MS)
                 if (tracker == null && prefs.hasActiveTrip) restore()
                 tracker?.let { finish(it.stopNow(System.currentTimeMillis())) } ?: stopEverything()
             }
@@ -112,6 +128,7 @@ class TripService : Service(), LocationListener {
             prefs.autoAsked = true
             Questions.askDuringTrip(this)
         } else if (AutoRules.falseAlarm(prefs.activeStart, now, t.maxSpeedKmh, t.speedKmh)) {
+            prefs.muteAuto(Config.AUTO_MUTE_AFTER_FALSE_MS)
             stopEverything()
             return true
         }
@@ -205,6 +222,12 @@ class TripService : Service(), LocationListener {
     }
 
     private fun finish(end: TripEnd) {
+        save(end)
+        stopEverything()
+    }
+
+    /** Сохранить законченную поездку (если она не слишком короткая). */
+    private fun save(end: TripEnd) {
         val t = tracker
         var savedId = 0L
         if (t != null && end.distanceM >= Config.MIN_TRIP_M) {
@@ -235,21 +258,26 @@ class TripService : Service(), LocationListener {
                 Questions.cancel(this)
             }
         }
-        stopEverything()
     }
 
-    private fun stopEverything() {
+    /** Забыть текущую поездку и выключить GPS, но службу не останавливать. */
+    private fun clearTrip() {
         tracker = null
         handler.removeCallbacks(ticker)
         getSystemService(LocationManager::class.java).removeUpdates(this)
         db.clearPoints()
         prefs.clearTrip()
         AppState.live.value = null
+    }
+
+    private fun stopEverything() {
+        clearTrip()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
+        running = false
         handler.removeCallbacks(ticker)
         getSystemService(LocationManager::class.java).removeUpdates(this)
         super.onDestroy()
@@ -291,6 +319,11 @@ class TripService : Service(), LocationListener {
         else null
 
     companion object {
+        /** Служба работает в этом процессе (запись идёт). */
+        @Volatile
+        var running = false
+            private set
+
         private const val CHANNEL_ID = "trip"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_START = "start"

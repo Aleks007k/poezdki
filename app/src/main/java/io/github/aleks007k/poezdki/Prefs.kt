@@ -52,6 +52,20 @@ class Prefs(context: Context) {
         get() = p.getLong("auto_pending", 0L)
         set(v) { p.edit().putLong("auto_pending", v).commit() }
 
+    /** Автозапись молчит до этого времени (после «НЕТ», «Стоп», ложной тревоги). */
+    var autoMuteUntil: Long
+        get() = p.getLong("auto_mute", 0L)
+        set(v) { p.edit().putLong("auto_mute", v).apply() }
+
+    fun muteAuto(forMs: Long) {
+        autoMuteUntil = System.currentTimeMillis() + forMs
+    }
+
+    /** Когда Android последний раз сказал «в машине» — для строки состояния. */
+    var lastVehicleSignal: Long
+        get() = p.getLong("auto_last_signal", 0L)
+        set(v) { p.edit().putLong("auto_last_signal", v).apply() }
+
     fun startTrip(start: Long, destination: String, target: LatLon?, auto: Boolean = false) {
         p.edit().putLong("trip_start", start).putString("trip_dest", destination)
             .remove("trip_lat").remove("trip_lon")

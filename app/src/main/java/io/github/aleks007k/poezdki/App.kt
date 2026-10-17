@@ -69,6 +69,9 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         car,
                         onBack = { screen = carBack },
                         onSave = { activity.saveCar(it); screen = carBack },
+                        autoProblem = AutoDetect.problem(activity),
+                        lastVehicleSignal = prefs.lastVehicleSignal,
+                        onFixAuto = activity::openAppSettings,
                     )
                     else -> MainScreen(db, activity, onSummary = { screen = Screen.SUMMARY })
                 }
