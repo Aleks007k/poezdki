@@ -121,7 +121,7 @@
     <string name="src_moving_speed">км/ч — средняя в движении</string>
     <string name="exp_l100_step">Какой расход</string>
     <string name="exp_l100_f">до 40 км/ч — город, от 80 км/ч — трасса, между — плавно</string>
-    <string name="exp_l100_n">средняя в движении %1$s км/ч → %2$s л/100</string>
+    <string name="exp_l100_n">средняя в движении %1$s\u00A0км/ч → %2$s\u00A0л/100</string>
     <string name="src_price">цена литра</string>
     <string name="src_trip_km">км поездки</string>
     <string name="src_trip_min">минут в пути</string>
