@@ -61,6 +61,16 @@ class Prefs(context: Context) {
         autoMuteUntil = System.currentTimeMillis() + forMs
     }
 
+    /** Запасной канал: когда последняя проверка сказала «в машине» (0 — сказала «нет»). */
+    var lastSampleInCar: Long
+        get() = p.getLong("auto_sample_car", 0L)
+        set(v) { p.edit().putLong("auto_sample_car", v).apply() }
+
+    /** «Включи геолокацию» не показывать до этого времени. */
+    var locationNagUntil: Long
+        get() = p.getLong("auto_nag", 0L)
+        set(v) { p.edit().putLong("auto_nag", v).apply() }
+
     /** Когда Android последний раз сказал «в машине» — для строки состояния. */
     var lastVehicleSignal: Long
         get() = p.getLong("auto_last_signal", 0L)

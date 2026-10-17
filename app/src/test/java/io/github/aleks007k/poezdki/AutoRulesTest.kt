@@ -20,4 +20,17 @@ class AutoRulesTest {
         assertTrue(AutoRules.falseAlarm(t0, t0 + 3 * 60_000L, 10.0, 0.0)) // выключаем GPS
         assertFalse(AutoRules.falseAlarm(t0, t0 + 10 * 60_000L, 40.0, 0.0)) // правда едем
     }
+
+    @Test
+    fun oneSampleIsNotEnough() {
+        assertFalse(AutoRules.pairConfirms(previousInCarAt = 0L, now = t0)) // первая проверка
+        assertTrue(AutoRules.pairConfirms(previousInCarAt = t0, now = t0 + 90_000L)) // вторая подряд
+        assertFalse(AutoRules.pairConfirms(previousInCarAt = t0, now = t0 + 10 * 60_000L)) // слишком давно
+    }
+
+    @Test
+    fun oldInCarEventIsIgnored() {
+        assertTrue(AutoRules.freshEvent(30_000L))
+        assertFalse(AutoRules.freshEvent(60 * 60_000L))
+    }
 }

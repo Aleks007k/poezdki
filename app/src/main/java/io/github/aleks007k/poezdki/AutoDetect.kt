@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.ActivityRecognition
 import com.google.android.gms.location.ActivityRecognitionResult
@@ -76,27 +77,38 @@ object AutoDetect {
 /** Android сообщил: «в машине» (событие посадки или очередная проверка). */
 class TransitionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val prefs = Prefs(context)
+        val now = System.currentTimeMillis()
         val inCar = when {
+            // «Сел в машину» — верим, только если событие свежее.
             ActivityTransitionResult.hasResult(intent) ->
                 ActivityTransitionResult.extractResult(intent)?.transitionEvents.orEmpty().any {
                     it.activityType == DetectedActivity.IN_VEHICLE &&
-                        it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER
+                        it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER &&
+                        AutoRules.freshEvent((SystemClock.elapsedRealtimeNanos() - it.elapsedRealTimeNanos) / 1_000_000)
                 }
-            ActivityRecognitionResult.hasResult(intent) ->
-                (ActivityRecognitionResult.extractResult(intent)?.getActivityConfidence(DetectedActivity.IN_VEHICLE) ?: 0) >=
-                    Config.AUTO_MIN_CONFIDENCE
+            // Запасной канал: верим, только если две проверки подряд сказали «в машине».
+            ActivityRecognitionResult.hasResult(intent) -> {
+                val sure = (ActivityRecognitionResult.extractResult(intent)
+                    ?.getActivityConfidence(DetectedActivity.IN_VEHICLE) ?: 0) >= Config.AUTO_MIN_CONFIDENCE
+                val confirmed = sure && AutoRules.pairConfirms(prefs.lastSampleInCar, now)
+                prefs.lastSampleInCar = if (sure) now else 0L
+                confirmed
+            }
             else -> false
         }
         if (!inCar) return
-        val prefs = Prefs(context)
-        prefs.lastVehicleSignal = System.currentTimeMillis()
+        prefs.lastVehicleSignal = now
         // Запись уже идёт (служба жива) или недавно сказали «НЕТ» / «Стоп» — ничего не делаем.
         if (TripService.running && prefs.hasActiveTrip) return
-        if (System.currentTimeMillis() < prefs.autoMuteUntil) return
+        if (now < prefs.autoMuteUntil) return
         if (!AutoDetect.permitted(context)) return
         if (!locationOn(context)) {
-            // Геолокация выключена — скорость не узнать и поездку не записать. Скажем об этом.
-            Questions.askLocationOff(context)
+            // Геолокация выключена — скорость не узнать и поездку не записать. Скажем (не чаще раза в 30 мин).
+            if (now >= prefs.locationNagUntil) {
+                prefs.locationNagUntil = now + Config.LOCATION_NAG_MS
+                Questions.askLocationOff(context)
+            }
             return
         }
         try {
