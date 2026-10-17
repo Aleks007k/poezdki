@@ -112,11 +112,12 @@ fun TripDetailContent(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Stat(Modifier.weight(1f), kmText(context, t.distanceM), stringResource(R.string.stat_distance))
-                val (h, m) = Format.hoursMinutes(t.durationMs)
-                Stat(Modifier.weight(1f), context.getString(R.string.duration_short, h, m), stringResource(R.string.stat_duration))
+                // В движении + стоял = всё время поездки (оно видно в маршруте: 18:13 → 19:26).
+                val (h, m) = Format.hoursMinutes(t.movingMs)
+                Stat(Modifier.weight(1f), context.getString(R.string.duration_short, h, m), stringResource(R.string.stat_moving))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Stat(Modifier.weight(1f), speedText(context, t.avgSpeedKmh), stringResource(R.string.stat_avg))
+                Stat(Modifier.weight(1f), speedText(context, t.movingSpeedKmh), stringResource(R.string.stat_avg))
                 Stat(Modifier.weight(1f), speedText(context, t.maxSpeedKmh), stringResource(R.string.stat_max))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -207,7 +208,8 @@ private fun PointBlock(caption: String, at: LatLon?, address: String?, places: M
             place?.let { placeName(context, it.id, it) } ?: address ?: stringResource(R.string.unknown_place),
             fontWeight = FontWeight.Bold, fontSize = 21.sp,
         )
-        val sub = if (place != null) address ?: place.address else null
+        // Под названием места — его адрес (тот, что ты ввёл), а не соседний дом от геокодера.
+        val sub = place?.address
         if (!sub.isNullOrBlank()) Text(sub, color = C.Soft, fontSize = 15.sp)
     }
 }

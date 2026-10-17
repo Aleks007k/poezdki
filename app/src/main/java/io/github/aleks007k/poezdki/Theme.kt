@@ -220,3 +220,37 @@ fun AmberButton(text: String, onClick: () -> Unit, enabled: Boolean = true, modi
         contentAlignment = Alignment.Center,
     ) { Big(text, 22, if (enabled) C.OnAmber else C.Dim) }
 }
+
+/** Кнопка-ссылка в рамке: значок + текст. */
+@Composable
+fun OutlineLink(icon: Int, text: String, onClick: () -> Unit, color: Color = C.Amber) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        Modifier.clip(shape).border(1.5.dp, color, shape).combinedClickableIf(true, onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Ico(icon, color, 24.dp)
+        Spacer(Modifier.width(10.dp))
+        Text(text, color = C.Text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    }
+}
+
+/** Полоска «● Запись идёт · 12,3 км» на других экранах во время поездки. */
+@Composable
+fun RecordingBar(distanceM: Double, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        Modifier.fillMaxWidth().padding(top = 8.dp).clip(shape).background(C.AmberDark)
+            .combinedClickableIf(true, onClick).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFFFF5A4E)))
+        Spacer(Modifier.width(10.dp))
+        Text(stringResource(R.string.recording), color = C.AmberSoft, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+            modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.km_value, Format.decimal(distanceM / 1000.0, 1)), color = C.Amber,
+            fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Ico(R.drawable.ic_chevron_right, C.Amber, 18.dp)
+    }
+}

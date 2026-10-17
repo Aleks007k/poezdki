@@ -63,4 +63,15 @@ class CostsTest {
         assertEquals(15_000.0, Format.parse("15 000")!!, 0.0)
         assertEquals(0.0, Format.parseOrZero(""), 0.0)
     }
+
+    @Test
+    fun cityAndHighway() {
+        val c = CarCosts(litersPer100 = 6.0, litersCity = 8.0, pricePerLiter = 2.0)
+        assertEquals(8.0, c.litersFor(25.0), 1e-9) // город
+        assertEquals(7.0, c.litersFor(60.0), 1e-9) // посередине
+        assertEquals(6.0, c.litersFor(110.0), 1e-9) // трасса
+        assertEquals(6.0, CarCosts(litersPer100 = 6.0).litersFor(20.0), 1e-9) // город не задан
+        assertEquals(1.6, c.liters(20_000.0, 30.0), 1e-9)
+        assertEquals(c, CarCosts.decode(c.encode()))
+    }
 }

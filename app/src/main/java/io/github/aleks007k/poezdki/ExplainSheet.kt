@@ -60,9 +60,9 @@ fun ExplainContent(e: Explanation, onChange: () -> Unit, modifier: Modifier = Mo
         if (e.notSet) {
             Text(stringResource(R.string.exp_not_set), color = C.Soft, fontSize = 17.sp, lineHeight = 24.sp)
         } else {
-            e.steps.forEach { step ->
+            e.steps.forEachIndexed { i, step ->
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Caption(step.caption)
+                    Caption(if (e.steps.size > 1) stringResource(R.string.exp_step, i + 1, step.caption) else step.caption)
                     Column(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(C.Bg).padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),

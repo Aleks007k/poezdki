@@ -75,13 +75,14 @@
     <string name="time_range">%1$s · %2$s–%3$s</string>
     <string name="route">%1$s → %2$s</string>
     <string name="trip_line">%1$s · %2$s · %3$s</string>
+    <string name="drive_time">%1$s езды</string>
 
     <!-- Поездка подробно -->
     <string name="from_label">%1$s · откуда</string>
     <string name="to_label">%1$s · куда</string>
     <string name="stat_distance">расстояние</string>
-    <string name="stat_duration">в пути</string>
-    <string name="stat_avg">средняя скорость</string>
+    <string name="stat_moving">в движении</string>
+    <string name="stat_avg">средняя в движении</string>
     <string name="stat_max">макс. скорость</string>
     <string name="stat_stood">стоял</string>
     <string name="stat_liters">топлива</string>
@@ -96,24 +97,31 @@
 
     <!-- Как посчитано -->
     <string name="exp_sources">Откуда цифры</string>
+    <string name="exp_step">Шаг %1$d · %2$s</string>
     <string name="exp_change">Изменить цифры</string>
     <string name="src_you">ты ввёл · VIP Борт\u00A0№1</string>
     <string name="src_trip_day">на день поездки</string>
     <string name="src_gps">записал GPS</string>
     <string name="src_own_cost">сколько км стоит тебе</string>
     <string name="exp_not_set">Не задано. Заполни на экране «VIP Борт\u00A0№1» — и поездки будут это учитывать.</string>
-    <string name="exp_fuel_step1">Шаг 1 · Сколько литров</string>
+    <string name="exp_fuel_step1">Сколько литров</string>
     <string name="exp_fuel_f1">км поездки × расход ÷ 100</string>
-    <string name="exp_fuel_step2">Шаг 2 · Сколько денег</string>
+    <string name="exp_fuel_step2">Сколько денег</string>
     <string name="exp_fuel_f2">литры × цена литра</string>
-    <string name="exp_per_km_step">Шаг 1 · Сколько стоит 1 км</string>
-    <string name="exp_trip_step">Шаг 2 · Эта поездка</string>
+    <string name="exp_per_km_step">Сколько стоит 1 км</string>
+    <string name="exp_trip_step">Эта поездка</string>
     <string name="exp_trip_f">км поездки × цена 1 км</string>
     <string name="exp_wear_f1">(стоит сейчас − продам за) ÷ лет ÷ км в год</string>
     <string name="exp_upkeep_f1">(страховка + налог + ТО + шины) ÷ км в год</string>
     <string name="exp_fare_step">Как в такси</string>
     <string name="exp_fare_f">посадка + км × за км + минуты × за минуту</string>
     <string name="src_l100">расход, л на 100 км</string>
+    <string name="src_l100_city">расход в городе</string>
+    <string name="src_l100_highway">расход на трассе</string>
+    <string name="src_moving_speed">км/ч — средняя в движении</string>
+    <string name="exp_l100_step">Какой расход</string>
+    <string name="exp_l100_f">до 40 км/ч — город, от 80 км/ч — трасса, между — плавно</string>
+    <string name="exp_l100_n">средняя в движении %1$s км/ч → %2$s л/100</string>
     <string name="src_price">цена литра</string>
     <string name="src_trip_km">км поездки</string>
     <string name="src_trip_min">минут в пути</string>
@@ -130,6 +138,8 @@
     <string name="per_km">Каждый км стоит</string>
     <string name="sec_fuel">Топливо</string>
     <string name="liters_per_100">л на 100 км</string>
+    <string name="liters_city">л/100 · город</string>
+    <string name="liters_highway">л/100 · трасса</string>
     <string name="price_per_liter">€ за литр</string>
     <string name="sec_wear">Износ — машина дешевеет</string>
     <string name="car_value">Сколько стоит сейчас, €</string>
@@ -149,8 +159,12 @@
     <string name="car_hint">Износ, содержание и тариф действуют на все поездки. Расход и цена топлива — только на новые: цена меняется, и каждая поездка помнит свою.</string>
     <string name="version">Версия %1$s</string>
     <string name="how_to">Как узнать?</string>
-    <string name="how_fuel">Расход — средний, его показывает бортовой компьютер машины.
-Цена — с последнего чека с заправки. Цена изменилась — просто поправь её здесь.</string>
+    <string name="wear_zero_price">Износ 0: «продам за» не меньше «стоит сейчас». Впиши, за сколько реально продашь.</string>
+    <string name="wear_zero_years">Износ 0: впиши, через сколько лет продашь.</string>
+    <string name="wear_zero_km">Износ 0: впиши ниже, сколько км проезжаешь за год.</string>
+    <string name="gps_off_title">Похоже, ты едешь</string>
+    <string name="gps_off_text">Геолокация выключена — поездку не записать. Нажми, чтобы включить.</string>
+    <string name="how_fuel">Расход в городе и на трассе — из бортового компьютера или паспорта машины (городской и загородный цикл). Знаешь одно число — впиши его в «трасса», город оставь пустым.\nКакой расход взять, приложение решает по средней скорости в движении: до 40 км/ч — город, от 80 — трасса.\nЦена — с последнего чека с заправки.</string>
     <string name="how_wear">«Сколько стоит сейчас» — найди объявления о такой же машине (год, пробег, мотор), например на mobile.de, autoscout24 или avito, и возьми среднюю цену.
 «Продам за» — так же, но машины на столько лет старше, через сколько собираешься продать.
 Для ориентира: обычная машина за 5 лет теряет примерно 40–50 % цены.</string>

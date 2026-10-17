@@ -22,15 +22,47 @@ object Questions {
     fun askAfterTrip(context: Context, km: String) =
         show(context, context.getString(R.string.q_title_done), context.getString(R.string.q_text_done, km))
 
+    /** Android заметил «в машине», а геолокация выключена. Нажал — открылись настройки. */
+    fun askLocationOff(context: Context) {
+        val settings = PendingIntent.getActivity(
+            context, 13,
+            Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        notify(
+            context,
+            NotificationCompat.Builder(context, channel(context))
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(context.getString(R.string.gps_off_title))
+                .setContentText(context.getString(R.string.gps_off_text))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.gps_off_text)))
+                .setContentIntent(settings)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build(),
+        )
+    }
+
     fun cancel(context: Context) {
         context.getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID)
     }
 
-    private fun show(context: Context, title: String, text: String) {
-        val nm = context.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(
+    private fun channel(context: Context): String {
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.q_channel), NotificationManager.IMPORTANCE_HIGH)
         )
+        return CHANNEL_ID
+    }
+
+    private fun notify(context: Context, n: android.app.Notification) {
+        try {
+            context.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, n)
+        } catch (e: SecurityException) {
+            // Уведомления запрещены — сказать не получится.
+        }
+    }
+
+    private fun show(context: Context, title: String, text: String) {
         fun answer(yes: Boolean) = PendingIntent.getBroadcast(
             context, if (yes) 10 else 11,
             Intent(context, AnswerReceiver::class.java).putExtra(EXTRA_YES, yes),
@@ -40,7 +72,7 @@ object Questions {
             context, 12, Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val n = NotificationCompat.Builder(context, CHANNEL_ID)
+        val n = NotificationCompat.Builder(context, channel(context))
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
@@ -51,11 +83,7 @@ object Questions {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .build()
-        try {
-            nm.notify(NOTIFICATION_ID, n)
-        } catch (e: SecurityException) {
-            // Уведомления запрещены — вопрос не задать, поездка просто сохранится.
-        }
+        notify(context, n)
     }
 }
 

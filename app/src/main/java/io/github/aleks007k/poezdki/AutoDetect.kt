@@ -67,12 +67,23 @@ class TransitionReceiver : BroadcastReceiver() {
                 it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER
         }
         if (!inCar || Prefs(context).hasActiveTrip || !AutoDetect.permitted(context)) return
+        if (!locationOn(context)) {
+            // Геолокация выключена — скорость не узнать и поездку не записать. Скажем об этом.
+            Questions.askLocationOff(context)
+            return
+        }
         try {
             TripService.startAuto(context)
         } catch (e: Exception) {
             // Android не разрешил запуск из фона — пропускаем эту поездку.
         }
     }
+}
+
+private fun locationOn(context: Context): Boolean {
+    val lm = context.getSystemService(android.location.LocationManager::class.java)
+    return if (Build.VERSION.SDK_INT >= 28) lm.isLocationEnabled
+    else lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
 }
 
 /** После перезагрузки телефона и обновления приложения подписка пропадает — оформляем снова. */

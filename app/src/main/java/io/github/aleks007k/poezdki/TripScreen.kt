@@ -55,7 +55,9 @@ import kotlinx.coroutines.delay
 private const val GAUGE_MAX_KMH = 160.0
 
 @Composable
-fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () -> Unit, now0: Long? = null) {
+fun TripScreen(
+    live: LiveTrip, destination: String, car: CarCosts, onStop: () -> Unit, onSummary: () -> Unit, now0: Long? = null,
+) {
     val context = LocalContext.current
     var now by remember { mutableLongStateOf(now0 ?: System.currentTimeMillis()) }
     if (now0 == null) LaunchedEffect(Unit) {
@@ -65,7 +67,9 @@ fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () ->
         }
     }
     val elapsed = (now - live.startTime).coerceAtLeast(0)
-    val avg = if (elapsed > 60_000) live.distanceM / 1000.0 / (elapsed / 3_600_000.0) else 0.0
+    // Средняя — в движении, без стоянок: по ней видно, город это или трасса.
+    val moving = (elapsed - live.stoppedMs).coerceAtLeast(0)
+    val avg = if (moving > 60_000) live.distanceM / 1000.0 / (moving / 3_600_000.0) else 0.0
     val pulse by rememberInfiniteTransition(label = "rec").animateFloat(
         1f, 0.25f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "rec",
     )
@@ -111,7 +115,7 @@ fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () ->
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Tile(Modifier.weight(1f), stringResource(R.string.tile_fuel), moneyText(context, car.fuel(live.distanceM)), C.Amber)
+                Tile(Modifier.weight(1f), stringResource(R.string.tile_fuel), moneyText(context, car.fuel(live.distanceM, if (avg > 0) avg else Config.HIGHWAY_SPEED_KMH)), C.Amber)
                 Tile(Modifier.weight(1f), stringResource(R.string.tile_stood), minutesText(context, live.stoppedMs))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -130,6 +134,8 @@ fun TripScreen(live: LiveTrip, destination: String, car: CarCosts, onStop: () ->
             Spacer(Modifier.width(14.dp))
             Big(stringResource(R.string.stop), 28, Color.White)
         }
+        // Во время записи можно смотреть итоги и машину — запись идёт дальше.
+        OutlineLink(R.drawable.ic_chart, stringResource(R.string.summary), onSummary)
     }
 }
 

@@ -39,7 +39,7 @@ class ScreenshotsTest {
         3 to Place(3, "Спортзал", "Gartenweg 3", gym),
     )
     private val car = CarCosts(
-        litersPer100 = 7.0, pricePerLiter = 1.84,
+        litersPer100 = 6.0, litersCity = 8.0, pricePerLiter = 1.84,
         carValue = 18_000.0, sellPrice = 8_000.0, years = 5.0, kmPerYear = 15_000.0,
         insurance = 600.0, tax = 150.0, service = 500.0, tires = 250.0,
     )
@@ -77,7 +77,7 @@ class ScreenshotsTest {
     @Test
     fun trip() = shot("2_trip") {
         val now = at(14, 8, 42)
-        TripScreen(LiveTrip(at(14, 8, 15), 23_400.0, 62.0, 87.0, 6 * 60_000L), "Lindenstraße 5", car, no, now0 = now)
+        TripScreen(LiveTrip(at(14, 8, 15), 23_400.0, 62.0, 87.0, 6 * 60_000L), "Lindenstraße 5", car, no, no, now0 = now)
     }
 
     @Test

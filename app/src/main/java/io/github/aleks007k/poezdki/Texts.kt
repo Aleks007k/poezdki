@@ -80,19 +80,33 @@ fun explain(context: Context, t: Trip, kind: CostKind): Explanation {
     val gps = s(R.string.src_gps)
     val tripKm = Source(kmN, s(R.string.src_trip_km), gps)
     return when (kind) {
-        CostKind.FUEL -> Explanation(
+        CostKind.FUEL -> {
+            val l100 = c.litersFor(t.movingSpeedKmh)
+            val speed = Format.speed(t.movingSpeedKmh)
+            // Если задан расход «в городе» — сначала объяснить, какой расход взят.
+            val which = if (c.litersCity > 0) listOf(
+                Step(s(R.string.exp_l100_step), s(R.string.exp_l100_f),
+                    context.getString(R.string.exp_l100_n, speed, n(l100, 1))),
+            ) else emptyList()
+            Explanation(
             s(R.string.cost_fuel), moneyText(context, t.fuel), C.Amber,
-            listOf(
-                Step(s(R.string.exp_fuel_step1), s(R.string.exp_fuel_f1), "$kmN × ${n(c.litersPer100)} ÷ 100 = ${n(t.liters)} л"),
+            which + listOf(
+                Step(s(R.string.exp_fuel_step1), s(R.string.exp_fuel_f1), "$kmN × ${n(l100, 1)} ÷ 100 = ${n(t.liters)} л"),
                 Step(s(R.string.exp_fuel_step2), s(R.string.exp_fuel_f2), "${n(t.liters)} × ${n(c.pricePerLiter, 3)} = ${Format.money(t.fuel)} €"),
             ),
-            listOf(
+            (if (c.litersCity > 0) listOf(
+                Source("${n(c.litersCity)} л", s(R.string.src_l100_city), s(R.string.src_trip_day)),
+                Source("${n(c.litersPer100)} л", s(R.string.src_l100_highway), s(R.string.src_trip_day)),
+                Source(speed, s(R.string.src_moving_speed), s(R.string.src_gps)),
+            ) else listOf(
                 Source("${n(c.litersPer100)} л", s(R.string.src_l100), s(R.string.src_trip_day)),
+            )) + listOf(
                 Source("${n(c.pricePerLiter, 3)} €", s(R.string.src_price), s(R.string.src_trip_day)),
                 tripKm,
             ),
             notSet = false,
         )
+        }
         CostKind.WEAR -> Explanation(
             s(R.string.cost_wear), moneyText(context, t.wear), C.Blue,
             listOf(

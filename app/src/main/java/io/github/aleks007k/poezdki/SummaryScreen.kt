@@ -122,15 +122,8 @@ fun SummaryContent(
             }
         }
 
-        Row(
-            Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(16.dp))
-                .border(1.dp, C.Line, RoundedCornerShape(16.dp)).clickable(onClick = onCar)
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Ico(R.drawable.ic_car, C.Muted, 20.dp)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.car_link), color = C.Muted, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            OutlineLink(R.drawable.ic_car, stringResource(R.string.car_link), onCar)
         }
         Spacer(Modifier.height(4.dp))
     }
@@ -216,7 +209,10 @@ private fun TripCard(t: Trip, places: Map<Int, Place>, big: Boolean, onClick: ()
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    context.getString(R.string.trip_line, kmText(context, t.distanceM), durationText(context, t.durationMs), litersText(context, t.liters)),
+                    context.getString(
+                        R.string.trip_line, kmText(context, t.distanceM),
+                        context.getString(R.string.drive_time, durationText(context, t.movingMs)), litersText(context, t.liters),
+                    ),
                     color = C.Soft, fontSize = if (big) 16.sp else 14.sp, modifier = Modifier.weight(1f),
                 )
                 if (t.paid) {

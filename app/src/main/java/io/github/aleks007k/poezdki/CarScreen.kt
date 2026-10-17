@@ -42,6 +42,7 @@ private fun Double.input() = if (this > 0) Format.forInput(this) else ""
 fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, systemBack: Boolean = true) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
+    var l100City by rememberSaveable { mutableStateOf(car.litersCity.input()) }
     var price by rememberSaveable { mutableStateOf(car.pricePerLiter.input()) }
     var value by rememberSaveable { mutableStateOf(car.carValue.input()) }
     var years by rememberSaveable { mutableStateOf(car.years.input()) }
@@ -57,7 +58,7 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
 
     val z = Format::parseOrZero
     val edited = CarCosts(
-        litersPer100 = z(l100), pricePerLiter = z(price),
+        litersPer100 = z(l100), litersCity = z(l100City), pricePerLiter = z(price),
         carValue = z(value), sellPrice = z(sell), years = z(years), kmPerYear = z(kmYear),
         insurance = z(ins), tax = z(tax), service = z(service), tires = z(tires),
         fareBase = z(fareBase), farePerKm = Format.parse(fareKm), farePerMinute = z(fareMin),
@@ -95,9 +96,10 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
 
         Section(stringResource(R.string.sec_fuel), C.Amber)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Field(stringResource(R.string.liters_per_100), l100, { l100 = it }, Modifier.weight(1f))
-            Field(stringResource(R.string.price_per_liter), price, { price = it }, Modifier.weight(1f))
+            Field(stringResource(R.string.liters_city), l100City, { l100City = it }, Modifier.weight(1f), placeholder = l100)
+            Field(stringResource(R.string.liters_highway), l100, { l100 = it }, Modifier.weight(1f))
         }
+        Field(stringResource(R.string.price_per_liter), price, { price = it }, Modifier.fillMaxWidth())
         HowTo(stringResource(R.string.how_fuel))
 
         Section(stringResource(R.string.sec_wear), C.Blue)
@@ -106,6 +108,15 @@ fun CarScreen(car: CarCosts, onBack: () -> Unit, onSave: (CarCosts) -> Unit, sys
             Field(stringResource(R.string.sell_years), years, { years = it }, Modifier.weight(1f))
             Field(stringResource(R.string.sell_price), sell, { sell = it }, Modifier.weight(1f))
         }
+        // Износ вышел 0 — сказать почему, а не молчать.
+        val wearWarning = when {
+            edited.carValue <= 0 -> null
+            edited.sellPrice >= edited.carValue -> R.string.wear_zero_price
+            edited.years <= 0 -> R.string.wear_zero_years
+            edited.kmPerYear <= 0 -> R.string.wear_zero_km
+            else -> null
+        }
+        wearWarning?.let { Text(stringResource(it), color = C.Amber, fontSize = 14.sp, lineHeight = 20.sp) }
         HowTo(stringResource(R.string.how_wear))
 
         Section(stringResource(R.string.sec_upkeep), C.Teal)

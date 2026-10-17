@@ -23,20 +23,24 @@ data class Trip(
     val paid: Boolean = false,
 ) {
     val durationMs get() = endTime - startTime
-    val liters get() = costs.liters(distanceM)
-    val fuel get() = costs.fuel(distanceM)
+    /** Время в движении — без стоянок (пробки, светофоры, остановки). */
+    val movingMs get() = (durationMs - stoppedMs).coerceAtLeast(0)
+    /** Средняя скорость в движении — по ней видно, город это или трасса. */
+    val movingSpeedKmh get() = if (movingMs > 0) distanceM / 1000.0 / (movingMs / 3_600_000.0) else 0.0
+    val liters get() = costs.liters(distanceM, movingSpeedKmh)
+    val fuel get() = costs.fuel(distanceM, movingSpeedKmh)
     val wear get() = costs.wear(distanceM)
     val upkeep get() = costs.upkeep(distanceM)
-    val total get() = costs.total(distanceM)
+    val total get() = costs.total(distanceM, movingSpeedKmh)
     val fare get() = costs.fare(distanceM, durationMs)
     /**
      * Износ, содержание и тариф — оценки за год: берём текущие (их уточняют).
      * Расход и цену топлива — на день поездки (цена меняется).
      */
     fun withCarCosts(current: CarCosts) =
-        copy(costs = current.copy(litersPer100 = costs.litersPer100, pricePerLiter = costs.pricePerLiter))
-
-    val avgSpeedKmh get() = if (durationMs > 0) distanceM / 1000.0 / (durationMs / 3_600_000.0) else 0.0
+        copy(costs = current.copy(
+            litersPer100 = costs.litersPer100, litersCity = costs.litersCity, pricePerLiter = costs.pricePerLiter,
+        ))
 }
 
 /** Кнопка места: 1 — Дом, 2 — Работа, 3 — своя. */
