@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
         db = Db.get(this)
         refreshSetup()
         setContent { PoezdkiApp(this, prefs, db) }
+        handleDriveYes(intent)
         // Пока приложение на экране: при открытии и после каждой новой поездки
         // определить адреса, которые ещё не определены.
         lifecycleScope.launch {
@@ -89,6 +90,20 @@ class MainActivity : ComponentActivity() {
                 AppState.dataVersion.collect { resolveAddresses() }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDriveYes(intent)
+    }
+
+    /** «ДА» на вопросе «Едешь на своём авто?» — начать запись. */
+    private fun handleDriveYes(intent: Intent?) {
+        if (intent?.action != Questions.ACTION_DRIVE_YES) return
+        intent.action = null // чтобы при повороте экрана не начать снова
+        Questions.cancel(this)
+        prefs.askedUntil = 0
+        if (!prefs.hasActiveTrip) recordNow()
     }
 
     override fun onResume() {

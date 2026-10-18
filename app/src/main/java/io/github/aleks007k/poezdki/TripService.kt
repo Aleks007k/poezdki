@@ -40,7 +40,6 @@ class TripService : Service(), LocationListener {
         override fun run() {
             val now = System.currentTimeMillis()
             tracker?.tick(now)?.let { finish(it); return }
-            if (checkAuto(now)) return
             publish()
             handler.postDelayed(this, Config.TICK_MS)
         }
@@ -58,7 +57,7 @@ class TripService : Service(), LocationListener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
-        if (action == ACTION_START || action == ACTION_AUTO || action == null) {
+        if (action == ACTION_START || action == null) {
             // Запуск через startForegroundService: уведомление нужно показать сразу.
             if (!goForeground()) {
                 // Android не разрешил (нет разрешения на местоположение или
@@ -70,29 +69,7 @@ class TripService : Service(), LocationListener {
         }
         when (action) {
             ACTION_START -> if (tracker == null) {
-                newTrip(intent!!.getStringExtra(EXTRA_DEST).orEmpty(), intent.target(), auto = false)
-            }
-            // Android заметил «в машине». Ручную поездку не трогаем.
-            ACTION_AUTO -> if (tracker == null) {
-                if (prefs.hasActiveTrip) {
-                    // Осталась прошлая запись (Android закрыл приложение). Ещё идёт — продолжаем,
-                    // давно кончилась — сохраняем её и начинаем новую.
-                    restore()
-                    val end = tracker?.tick(System.currentTimeMillis())
-                    if (end == null) {
-                        begin()
-                        return START_STICKY
-                    }
-                    save(end)
-                    clearTrip()
-                }
-                newTrip("", null, auto = true)
-            }
-            // «НЕТ» на вопросе «На своём авто?»: выключить GPS, ничего не сохранять.
-            ACTION_DISCARD -> {
-                Questions.cancel(this)
-                prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
-                stopEverything()
+                newTrip(intent!!.getStringExtra(EXTRA_DEST).orEmpty(), intent.target())
             }
             ACTION_TARGET -> {
                 intent!!.target()?.let { t ->
@@ -112,27 +89,13 @@ class TripService : Service(), LocationListener {
         return START_STICKY
     }
 
-    private fun newTrip(destination: String, target: LatLon?, auto: Boolean) {
+    private fun newTrip(destination: String, target: LatLon?) {
         val now = System.currentTimeMillis()
+        Questions.cancel(this) // запись началась — вопрос «Едешь на своём авто?» больше не нужен
         db.clearPoints()
-        prefs.startTrip(now, destination, target, auto)
+        prefs.startTrip(now, destination, target)
         tracker = TripTracker(now, target)
         begin()
-    }
-
-    /** Автопоездка: подтвердить (спросить «На своём авто?») или выключить ложную тревогу. */
-    private fun checkAuto(now: Long): Boolean {
-        val t = tracker ?: return false
-        if (!prefs.activeAuto || prefs.autoAsked) return false
-        if (AutoRules.confirmed(t.maxSpeedKmh, t.speedKmh)) {
-            prefs.autoAsked = true
-            Questions.askDuringTrip(this)
-        } else if (AutoRules.falseAlarm(prefs.activeStart, now, t.maxSpeedKmh, t.speedKmh)) {
-            prefs.muteAuto(Config.AUTO_MUTE_AFTER_FALSE_MS)
-            stopEverything()
-            return true
-        }
-        return false
     }
 
     private fun restoreOrStop() {
@@ -199,7 +162,6 @@ class TripService : Service(), LocationListener {
         if (p.accuracyM <= Config.MAX_ACCURACY_M) db.insertPoint(p)
         t.onPoint(p)
         t.tick(p.time)?.let { finish(it); return }
-        if (checkAuto(System.currentTimeMillis())) return
         publish()
     }
 
@@ -229,9 +191,8 @@ class TripService : Service(), LocationListener {
     /** Сохранить законченную поездку (если она не слишком короткая). */
     private fun save(end: TripEnd) {
         val t = tracker
-        var savedId = 0L
         if (t != null && end.distanceM >= Config.MIN_TRIP_M) {
-            savedId = db.insertTrip(
+            db.insertTrip(
                 Trip(
                     id = 0,
                     startTime = prefs.activeStart,
@@ -248,15 +209,6 @@ class TripService : Service(), LocationListener {
                 )
             )
             AppState.dataChanged()
-        }
-        if (prefs.activeAuto && prefs.autoAsked && !prefs.autoConfirmed) {
-            // Не ответил, пока ехал: поездка сохранена, вопрос остаётся — «Нет» её удалит.
-            if (savedId > 0) {
-                prefs.pendingAutoTripId = savedId
-                Questions.askAfterTrip(this, Format.km(end.distanceM))
-            } else {
-                Questions.cancel(this)
-            }
         }
     }
 
@@ -329,8 +281,6 @@ class TripService : Service(), LocationListener {
         private const val ACTION_START = "start"
         private const val ACTION_STOP = "stop"
         private const val ACTION_TARGET = "target"
-        private const val ACTION_AUTO = "auto"
-        private const val ACTION_DISCARD = "discard"
         private const val EXTRA_DEST = "dest"
         private const val EXTRA_LAT = "lat"
         private const val EXTRA_LON = "lon"
@@ -350,15 +300,6 @@ class TripService : Service(), LocationListener {
 
         fun stop(context: Context) =
             send(context, Intent(context, TripService::class.java).setAction(ACTION_STOP))
-
-        /** Android заметил «в машине» — начать запись сама. */
-        fun startAuto(context: Context) {
-            ContextCompat.startForegroundService(context, Intent(context, TripService::class.java).setAction(ACTION_AUTO))
-        }
-
-        /** «НЕТ»: выключить запись без сохранения. */
-        fun discard(context: Context) =
-            send(context, Intent(context, TripService::class.java).setAction(ACTION_DISCARD))
 
         /** Если поездка шла, а служба почему-то не работает, — запустить снова. */
         fun resumeIfNeeded(context: Context) {

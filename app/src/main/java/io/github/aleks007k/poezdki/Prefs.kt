@@ -36,22 +36,6 @@ class Prefs(context: Context) {
             )
         } else null
 
-    /** Поездка начата сама (Android заметил «в машине»), а не кнопкой. */
-    val activeAuto get() = p.getBoolean("trip_auto", false)
-
-    /** Автопоездка: уже спросили «На своём авто?» / уже ответили «Да». */
-    var autoAsked: Boolean
-        get() = p.getBoolean("auto_asked", false)
-        set(v) { p.edit().putBoolean("auto_asked", v).commit() }
-    var autoConfirmed: Boolean
-        get() = p.getBoolean("auto_yes", false)
-        set(v) { p.edit().putBoolean("auto_yes", v).commit() }
-
-    /** Автопоездка закончилась без ответа: её номер, чтобы «Нет» мог её удалить. */
-    var pendingAutoTripId: Long
-        get() = p.getLong("auto_pending", 0L)
-        set(v) { p.edit().putLong("auto_pending", v).commit() }
-
     /** Автозапись молчит до этого времени (после «НЕТ», «Стоп», ложной тревоги). */
     var autoMuteUntil: Long
         get() = p.getLong("auto_mute", 0L)
@@ -66,20 +50,19 @@ class Prefs(context: Context) {
         get() = p.getLong("auto_sample_car", 0L)
         set(v) { p.edit().putLong("auto_sample_car", v).apply() }
 
-    /** «Включи геолокацию» не показывать до этого времени. */
-    var locationNagUntil: Long
-        get() = p.getLong("auto_nag", 0L)
-        set(v) { p.edit().putLong("auto_nag", v).apply() }
+    /** Вопрос «Едешь на своём авто?» уже показан — не повторять до этого времени. */
+    var askedUntil: Long
+        get() = p.getLong("auto_asked_until", 0L)
+        set(v) { p.edit().putLong("auto_asked_until", v).apply() }
 
     /** Когда Android последний раз сказал «в машине» — для строки состояния. */
     var lastVehicleSignal: Long
         get() = p.getLong("auto_last_signal", 0L)
         set(v) { p.edit().putLong("auto_last_signal", v).apply() }
 
-    fun startTrip(start: Long, destination: String, target: LatLon?, auto: Boolean = false) {
+    fun startTrip(start: Long, destination: String, target: LatLon?) {
         p.edit().putLong("trip_start", start).putString("trip_dest", destination)
-            .remove("trip_lat").remove("trip_lon")
-            .putBoolean("trip_auto", auto).remove("auto_asked").remove("auto_yes").commit()
+            .remove("trip_lat").remove("trip_lon").commit()
         target?.let { setTarget(it) }
     }
 
@@ -89,7 +72,6 @@ class Prefs(context: Context) {
     }
 
     fun clearTrip() {
-        p.edit().remove("trip_start").remove("trip_dest").remove("trip_lat").remove("trip_lon")
-            .remove("trip_auto").remove("auto_asked").remove("auto_yes").commit()
+        p.edit().remove("trip_start").remove("trip_dest").remove("trip_lat").remove("trip_lon").commit()
     }
 }

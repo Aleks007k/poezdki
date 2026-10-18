@@ -19,19 +19,13 @@ import com.google.android.gms.location.DetectedActivity
 
 /**
  * Автозапись. Android сам (по датчикам движения, почти без батареи) сообщает
- * «я в машине» — только тогда включаем GPS. В остальное время GPS выключен.
+ * «я в машине» — тогда спрашиваем «Едешь на своём авто?». GPS включается только после «ДА».
  */
 object AutoDetect {
-    fun permitted(context: Context): Boolean {
-        fun ok(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
-        if (!ok(Manifest.permission.ACCESS_FINE_LOCATION)) return false
-        if (Build.VERSION.SDK_INT >= 29) {
-            // Запись из фона возможна только с «Разрешить в любом режиме».
-            if (!ok(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) return false
-            if (!ok(Manifest.permission.ACTIVITY_RECOGNITION)) return false
-        }
-        return true
-    }
+    /** Чтобы спросить «Едешь?», нужно только «Физическая активность». */
+    fun permitted(context: Context): Boolean =
+        Build.VERSION.SDK_INT < 29 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED
 
     /** Подписаться на «сел в машину». Повторный вызов безопасен. */
     @SuppressLint("MissingPermission") // проверено в permitted()
@@ -61,7 +55,6 @@ object AutoDetect {
         fun ok(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
         return when {
             !ok(Manifest.permission.ACCESS_FINE_LOCATION) -> R.string.auto_no_location
-            Build.VERSION.SDK_INT >= 29 && !ok(Manifest.permission.ACCESS_BACKGROUND_LOCATION) -> R.string.auto_no_background
             Build.VERSION.SDK_INT >= 29 && !ok(Manifest.permission.ACTIVITY_RECOGNITION) -> R.string.auto_no_activity
             else -> null
         }
@@ -99,30 +92,14 @@ class TransitionReceiver : BroadcastReceiver() {
         }
         if (!inCar) return
         prefs.lastVehicleSignal = now
-        // Запись уже идёт (служба жива) или недавно сказали «НЕТ» / «Стоп» — ничего не делаем.
+        // Запись уже идёт, недавно сказали «НЕТ» / «Стоп» или вопрос уже висит — молчим.
         if (TripService.running && prefs.hasActiveTrip) return
         if (now < prefs.autoMuteUntil) return
+        if (now < prefs.askedUntil) return
         if (!AutoDetect.permitted(context)) return
-        if (!locationOn(context)) {
-            // Геолокация выключена — скорость не узнать и поездку не записать. Скажем (не чаще раза в 30 мин).
-            if (now >= prefs.locationNagUntil) {
-                prefs.locationNagUntil = now + Config.LOCATION_NAG_MS
-                Questions.askLocationOff(context)
-            }
-            return
-        }
-        try {
-            TripService.startAuto(context)
-        } catch (e: Exception) {
-            // Android не разрешил запуск из фона — пропускаем эту поездку.
-        }
+        prefs.askedUntil = now + Config.ASK_TIMEOUT_MS
+        Questions.askDrive(context)
     }
-}
-
-private fun locationOn(context: Context): Boolean {
-    val lm = context.getSystemService(android.location.LocationManager::class.java)
-    return if (Build.VERSION.SDK_INT >= 28) lm.isLocationEnabled
-    else lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
 }
 
 /** После перезагрузки телефона и обновления приложения подписка пропадает — оформляем снова. */

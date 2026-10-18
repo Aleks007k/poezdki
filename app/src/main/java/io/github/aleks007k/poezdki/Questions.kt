@@ -8,104 +8,62 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 
-/** Уведомление «Едешь на своём авто?» с кнопками ДА / НЕТ. Окна поверх приложений нет. */
+/**
+ * Единственный вопрос от приложения: «Едешь на своём авто?» с кнопками ДА / НЕТ.
+ * ДА — открывается приложение и начинает запись (если геолокация выключена,
+ * Android сам предложит её включить). НЕТ — вопрос исчезает, полчаса тишины.
+ */
 object Questions {
     private const val CHANNEL_ID = "question"
     private const val NOTIFICATION_ID = 2
-    const val EXTRA_YES = "yes"
 
-    /** Во время автопоездки: запись уже идёт. */
-    fun askDuringTrip(context: Context) =
-        show(context, context.getString(R.string.q_title), context.getString(R.string.q_text))
+    /** Открыть приложение с этим действием = начать запись. */
+    const val ACTION_DRIVE_YES = "io.github.aleks007k.poezdki.DRIVE_YES"
 
-    /** Поездка закончилась, а ответа не было: она сохранена, «Нет» её удалит. */
-    fun askAfterTrip(context: Context, km: String) =
-        show(context, context.getString(R.string.q_title_done), context.getString(R.string.q_text_done, km))
-
-    /** Android заметил «в машине», а геолокация выключена. Нажал — открылись настройки. */
-    fun askLocationOff(context: Context) {
-        val settings = PendingIntent.getActivity(
-            context, 13,
-            Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    fun askDrive(context: Context) {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.q_channel), NotificationManager.IMPORTANCE_HIGH)
+        )
+        val yes = PendingIntent.getActivity(
+            context, 10,
+            Intent(context, MainActivity::class.java).setAction(ACTION_DRIVE_YES)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        notify(
-            context,
-            NotificationCompat.Builder(context, channel(context))
-                .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(context.getString(R.string.gps_off_title))
-                .setContentText(context.getString(R.string.gps_off_text))
-                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.gps_off_text)))
-                .setContentIntent(settings)
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .build(),
+        val no = PendingIntent.getBroadcast(
+            context, 11, Intent(context, AnswerReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        val n = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(context.getString(R.string.q_title))
+            .setContentText(context.getString(R.string.q_text))
+            .setContentIntent(yes) // нажал на само уведомление — тоже «ДА»
+            .addAction(0, context.getString(R.string.yes), yes)
+            .addAction(0, context.getString(R.string.no), no)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setTimeoutAfter(Config.ASK_TIMEOUT_MS) // не ответил — само исчезнет
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .build()
+        try {
+            nm.notify(NOTIFICATION_ID, n)
+        } catch (e: SecurityException) {
+            // Уведомления запрещены — спросить не получится.
+        }
     }
 
     fun cancel(context: Context) {
         context.getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID)
     }
-
-    private fun channel(context: Context): String {
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, context.getString(R.string.q_channel), NotificationManager.IMPORTANCE_HIGH)
-        )
-        return CHANNEL_ID
-    }
-
-    private fun notify(context: Context, n: android.app.Notification) {
-        try {
-            context.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, n)
-        } catch (e: SecurityException) {
-            // Уведомления запрещены — сказать не получится.
-        }
-    }
-
-    private fun show(context: Context, title: String, text: String) {
-        fun answer(yes: Boolean) = PendingIntent.getBroadcast(
-            context, if (yes) 10 else 11,
-            Intent(context, AnswerReceiver::class.java).putExtra(EXTRA_YES, yes),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val open = PendingIntent.getActivity(
-            context, 12, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val n = NotificationCompat.Builder(context, channel(context))
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setContentIntent(open)
-            .addAction(0, context.getString(R.string.yes), answer(true))
-            .addAction(0, context.getString(R.string.no), answer(false))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .build()
-        notify(context, n)
-    }
 }
 
-/** Нажали ДА или НЕТ в уведомлении. */
+/** Нажали «НЕТ»: убрать вопрос и не спрашивать полчаса (автобус, такси, чужая машина). */
 class AnswerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val prefs = Prefs(context)
-        val yes = intent.getBooleanExtra(Questions.EXTRA_YES, true)
         Questions.cancel(context)
-        val autoRunning = prefs.hasActiveTrip && prefs.activeAuto
-        when {
-            yes && autoRunning -> prefs.autoConfirmed = true
-            yes -> prefs.pendingAutoTripId = 0
-            autoRunning -> TripService.discard(context)
-            else -> {
-                val id = prefs.pendingAutoTripId
-                if (id > 0) {
-                    Db.get(context).deleteTrip(id)
-                    prefs.pendingAutoTripId = 0
-                    AppState.dataChanged()
-                }
-            }
-        }
+        Prefs(context).muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
     }
 }
