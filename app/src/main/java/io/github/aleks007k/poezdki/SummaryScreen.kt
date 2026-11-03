@@ -78,8 +78,12 @@ fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Un
         places = loaded.second
     }
     SummaryContent(
-        periodLabel(period, mode), mode, canGoLater = offset < 0, trips, places, refueled,
-        onMode = { mode = it; offset = 0 }, onEarlier = { offset-- }, onLater = { offset++ },
+        periodLabel(period, mode), mode, period.from.year.toString(), canGoLater = offset < 0, trips, places, refueled,
+        // Из месяца в год — открываем год этого месяца (октябрь 2025 → 2025).
+        onMode = { new ->
+            offset = if (new == PeriodMode.YEAR && mode == PeriodMode.MONTH) period.from.year - today.year else 0
+            mode = new
+        }, onEarlier = { offset-- }, onLater = { offset++ },
         onTrip = onTrip, onCar = onCar, onBack = onBack,
     )
 }
@@ -88,6 +92,7 @@ fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Un
 fun SummaryContent(
     periodText: String,
     mode: PeriodMode,
+    yearText: String? = null,
     canGoLater: Boolean,
     trips: List<Trip>,
     places: Map<Int, Place>,
@@ -101,12 +106,11 @@ fun SummaryContent(
 ) {
     Column(Modifier.fillMaxSize().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         BackHeader(stringResource(R.string.summary), onBack)
-        // Неделя | Месяц | Год
+        // Неделя | Месяц (год — ссылкой под названием месяца, без третьей кнопки)
         Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 4.dp) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Segment(stringResource(R.string.week), mode == PeriodMode.WEEK, Modifier.weight(1f)) { onMode(PeriodMode.WEEK) }
                 Segment(stringResource(R.string.month), mode == PeriodMode.MONTH, Modifier.weight(1f)) { onMode(PeriodMode.MONTH) }
-                Segment(stringResource(R.string.year), mode == PeriodMode.YEAR, Modifier.weight(1f)) { onMode(PeriodMode.YEAR) }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -116,6 +120,15 @@ fun SummaryContent(
                 textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             )
             SquareButton(R.drawable.ic_chevron_right, stringResource(R.string.next_period), C.Text, onLater, enabled = canGoLater)
+        }
+        // Месяц → «весь 2026 год ›». Год — назад к месяцам теми же кнопками «Неделя / Месяц».
+        if (mode == PeriodMode.MONTH && yearText != null) {
+            Text(
+                stringResource(R.string.whole_year, yearText), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 0.dp).clip(RoundedCornerShape(10.dp))
+                    .clickable { onMode(PeriodMode.YEAR) }.padding(vertical = 4.dp),
+            )
         }
 
         LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {

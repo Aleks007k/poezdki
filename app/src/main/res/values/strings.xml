@@ -58,7 +58,7 @@
     <!-- Итоги -->
     <string name="week">Неделя</string>
     <string name="month">Месяц</string>
-    <string name="year">Год</string>
+    <string name="whole_year">весь %1$s год ›</string>
     <string name="previous">Раньше</string>
     <string name="next_period">Позже</string>
     <string name="caption_km">км</string>

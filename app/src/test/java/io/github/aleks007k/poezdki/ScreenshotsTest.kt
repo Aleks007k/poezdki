@@ -82,12 +82,12 @@ class ScreenshotsTest {
 
     @Test
     fun summary() = shot("3_summary") {
-        SummaryContent("12–18 октября", PeriodMode.WEEK, false, trips, places, 78.21, {}, no, no, {}, no, no)
+        SummaryContent("Октябрь 2026", PeriodMode.MONTH, "2026", false, trips, places, 78.21, {}, no, no, {}, no, no)
     }
 
     @Test
     fun summaryEmpty() = shot("3b_summary_empty") {
-        SummaryContent("5–11 октября", PeriodMode.WEEK, true, emptyList(), places, 0.0, {}, no, no, {}, no, no)
+        SummaryContent("5–11 октября", PeriodMode.WEEK, null, true, emptyList(), places, 0.0, {}, no, no, {}, no, no)
     }
 
     @Test
