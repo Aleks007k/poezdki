@@ -126,13 +126,13 @@ fun TripScreen(
 
         Spacer(Modifier.height(4.dp))
         Row(
-            Modifier.fillMaxWidth().height(88.dp).clip(RoundedCornerShape(28.dp)).background(C.Red).clickable(onClick = onStop),
+            Modifier.fillMaxWidth().height(88.dp).clip(RoundedCornerShape(28.dp)).background(C.Amber).clickable(onClick = onStop),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)).background(Color.White))
+            Box(Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)).background(C.OnAmber))
             Spacer(Modifier.width(14.dp))
-            Big(stringResource(R.string.stop), 28, Color.White)
+            Big(stringResource(R.string.stop), 28, C.OnAmber)
         }
         // Во время записи можно смотреть итоги и машину — запись идёт дальше.
         OutlineLink(R.drawable.ic_chart, stringResource(R.string.summary), onSummary)
