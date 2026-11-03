@@ -192,7 +192,7 @@ private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
                 }
             }
             // Подписи переносятся, если суммы большие (за год), а не налезают друг на друга.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Legend(C.Amber, context.getString(R.string.legend_fuel, Format.money(fuel)))
                 Legend(C.Blue, context.getString(R.string.legend_wear, Format.money(wear)))
                 Legend(C.Teal, context.getString(R.string.legend_upkeep, Format.money(upkeep)))
@@ -221,8 +221,8 @@ private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
 private fun Legend(color: Color, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(color))
-        Spacer(Modifier.width(5.dp))
-        Text(text, color = C.Soft, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Spacer(Modifier.width(4.dp))
+        Text(text, color = C.Soft, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 
