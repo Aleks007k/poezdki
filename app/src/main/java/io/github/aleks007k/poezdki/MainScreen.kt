@@ -129,15 +129,15 @@ fun MainContent(
                 Big(stringResource(R.string.where), 34, modifier = Modifier.weight(1f))
                 // ⛽ — заправка: сразу камера для фото чека (долгое нажатие — журнал).
                 Box(
-                    Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).border(1.5.dp, C.Amber, RoundedCornerShape(16.dp))
+                    Modifier.size(54.dp).clip(RoundedCornerShape(18.dp)).border(1.5.dp, C.Amber, RoundedCornerShape(18.dp))
                         .combinedClickable(onClick = onRefuel, onLongClick = onFuelLog),
                     contentAlignment = Alignment.Center,
-                ) { Ico(R.drawable.ic_fuel, C.Amber, 26.dp, stringResource(R.string.refuel_new)) }
+                ) { Ico(R.drawable.ic_fuel, C.Amber, 30.dp, stringResource(R.string.refuel_new)) }
                 Spacer(Modifier.width(10.dp))
                 // Записать поездку прямо сейчас — без адреса (если автозапись не сработала).
                 Row(
-                    Modifier.clip(RoundedCornerShape(22.dp)).background(C.Amber).clickable(onClick = onRecord)
-                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                    Modifier.height(54.dp).clip(RoundedCornerShape(22.dp)).background(C.Amber).clickable(onClick = onRecord)
+                        .padding(horizontal = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(12.dp).clip(RoundedCornerShape(6.dp)).background(C.OnAmber))
