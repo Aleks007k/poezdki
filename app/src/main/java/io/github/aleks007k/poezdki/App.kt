@@ -72,6 +72,8 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         autoProblem = AutoDetect.problem(activity),
                         lastVehicleSignal = prefs.lastVehicleSignal,
                         onFixAuto = activity::openAppSettings,
+                        companionLabel = prefs.companionLabel,
+                        onCompanion = activity::setCompanion,
                     )
                     else -> MainScreen(db, activity, onSummary = { screen = Screen.SUMMARY })
                 }

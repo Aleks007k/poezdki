@@ -47,6 +47,8 @@ fun CarScreen(
     autoProblem: Int? = null,
     lastVehicleSignal: Long = 0L,
     onFixAuto: () -> Unit = {},
+    companionLabel: String? = null,
+    onCompanion: (LaunchableApp?) -> Unit = {},
 ) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
@@ -150,6 +152,10 @@ fun CarScreen(
             Field(stringResource(R.string.fare_min), fareMin, { fareMin = it }, Modifier.weight(1f), placeholder = "0")
         }
         HowTo(stringResource(R.string.how_fare))
+
+        // Что открыть вместе с поездкой (например, Blitzer.de).
+        Section(stringResource(R.string.companion_title), C.Muted)
+        CompanionSection(companionLabel, onCompanion)
 
         // Автозапись: работает ли и когда Android последний раз сказал «в машине».
         Section(stringResource(R.string.auto_title), C.Muted)

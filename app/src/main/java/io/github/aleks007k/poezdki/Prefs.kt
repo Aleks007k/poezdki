@@ -45,10 +45,33 @@ class Prefs(context: Context) {
         autoMuteUntil = System.currentTimeMillis() + forMs
     }
 
-    /** Запасной канал: когда последняя проверка сказала «в машине» (0 — сказала «нет»). */
-    var lastSampleInCar: Long
-        get() = p.getLong("auto_sample_car", 0L)
-        set(v) { p.edit().putLong("auto_sample_car", v).apply() }
+    /** Сколько раз подряд Android сказал «в машине» (для случая без геолокации). */
+    var inCarStreak: Int
+        get() = p.getInt("auto_streak", 0)
+        set(v) { p.edit().putInt("auto_streak", v).apply() }
+
+    /** Последняя примерная точка при сигнале «в машине» — чтобы понять, сдвинулись ли. */
+    var lastFix: Fix?
+        get() = if (p.contains("fix_t")) Fix(
+            java.lang.Double.longBitsToDouble(p.getLong("fix_lat", 0)),
+            java.lang.Double.longBitsToDouble(p.getLong("fix_lon", 0)),
+            p.getFloat("fix_acc", 0f), p.getLong("fix_t", 0),
+        ) else null
+        set(v) {
+            val e = p.edit()
+            if (v == null) e.remove("fix_t") else e.putLong("fix_lat", java.lang.Double.doubleToRawLongBits(v.lat))
+                .putLong("fix_lon", java.lang.Double.doubleToRawLongBits(v.lon))
+                .putFloat("fix_acc", v.accuracyM).putLong("fix_t", v.time)
+            e.apply()
+        }
+
+    /** Запускать вместе с поездкой (например, Blitzer.de): пакет и название. Пусто — ничего. */
+    var companionPackage: String?
+        get() = p.getString("companion_pkg", null)
+        set(v) { p.edit().putString("companion_pkg", v).apply() }
+    var companionLabel: String?
+        get() = p.getString("companion_label", null)
+        set(v) { p.edit().putString("companion_label", v).apply() }
 
     /** Вопрос «Едешь на своём авто?» уже показан — не повторять до этого времени. */
     var askedUntil: Long

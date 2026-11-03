@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.ActivityRecognition
@@ -16,6 +18,9 @@ import com.google.android.gms.location.ActivityTransition
 import com.google.android.gms.location.ActivityTransitionRequest
 import com.google.android.gms.location.ActivityTransitionResult
 import com.google.android.gms.location.DetectedActivity
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 
 /**
  * Автозапись. Android сам (по датчикам движения, почти без батареи) сообщает
@@ -50,6 +55,40 @@ object AutoDetect {
         }
     }
 
+    /**
+     * Примерная точка по Wi‑Fi и вышкам связи (GPS не включается, батарея почти не тратится).
+     * null — геолокация выключена, нет разрешения или не успели за 8 секунд.
+     */
+    @SuppressLint("MissingPermission") // проверено ниже
+    fun roughFix(context: Context, done: (Fix?) -> Unit) {
+        fun ok(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
+        val located = ok(Manifest.permission.ACCESS_FINE_LOCATION) || ok(Manifest.permission.ACCESS_COARSE_LOCATION)
+        val inBackground = Build.VERSION.SDK_INT < 29 || ok(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        if (!located || !inBackground) {
+            done(null)
+            return
+        }
+        var answered = false
+        fun answer(f: Fix?) {
+            if (!answered) {
+                answered = true
+                done(f)
+            }
+        }
+        val cancel = CancellationTokenSource()
+        Handler(Looper.getMainLooper()).postDelayed({ cancel.cancel(); answer(null) }, 8_000)
+        try {
+            LocationServices.getFusedLocationProviderClient(context)
+                .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancel.token)
+                .addOnSuccessListener { loc ->
+                    answer(loc?.let { Fix(it.latitude, it.longitude, if (it.hasAccuracy()) it.accuracy else 500f, System.currentTimeMillis()) })
+                }
+                .addOnFailureListener { answer(null) }
+        } catch (e: Exception) {
+            answer(null)
+        }
+    }
+
     /** Что мешает автозаписи (для строки состояния). null — всё в порядке. */
     fun problem(context: Context): Int? {
         fun ok(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
@@ -67,38 +106,64 @@ object AutoDetect {
     )
 }
 
-/** Android сообщил: «в машине» (событие посадки или очередная проверка). */
+/**
+ * Android сообщил «в машине» (событие посадки или очередная проверка раз в 1,5 мин).
+ * Сам по себе этот сигнал часто ошибается (ходьба дома), поэтому проверяем реальный
+ * сдвиг по примерной точке (Wi‑Fi/вышки, без GPS): спрашиваем, только если правда едем.
+ */
 class TransitionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prefs = Prefs(context)
         val now = System.currentTimeMillis()
         val inCar = when {
-            // «Сел в машину» — верим, только если событие свежее.
             ActivityTransitionResult.hasResult(intent) ->
                 ActivityTransitionResult.extractResult(intent)?.transitionEvents.orEmpty().any {
                     it.activityType == DetectedActivity.IN_VEHICLE &&
                         it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER &&
                         AutoRules.freshEvent((SystemClock.elapsedRealtimeNanos() - it.elapsedRealTimeNanos) / 1_000_000)
                 }
-            // Запасной канал: верим, только если две проверки подряд сказали «в машине».
-            ActivityRecognitionResult.hasResult(intent) -> {
-                val sure = (ActivityRecognitionResult.extractResult(intent)
+            ActivityRecognitionResult.hasResult(intent) ->
+                (ActivityRecognitionResult.extractResult(intent)
                     ?.getActivityConfidence(DetectedActivity.IN_VEHICLE) ?: 0) >= Config.AUTO_MIN_CONFIDENCE
-                val confirmed = sure && AutoRules.pairConfirms(prefs.lastSampleInCar, now)
-                prefs.lastSampleInCar = if (sure) now else 0L
-                confirmed
-            }
             else -> false
         }
-        if (!inCar) return
+        if (!inCar) {
+            // Проверка сказала «не в машине» — серия прерывается.
+            if (ActivityRecognitionResult.hasResult(intent)) {
+                prefs.inCarStreak = 0
+                prefs.lastFix = null
+            }
+            return
+        }
         prefs.lastVehicleSignal = now
+        prefs.inCarStreak = prefs.inCarStreak + 1
         // Запись уже идёт, недавно сказали «НЕТ» / «Стоп» или вопрос уже висит — молчим.
         if (TripService.running && prefs.hasActiveTrip) return
-        if (now < prefs.autoMuteUntil) return
-        if (now < prefs.askedUntil) return
+        if (now < prefs.autoMuteUntil || now < prefs.askedUntil) return
         if (!AutoDetect.permitted(context)) return
-        prefs.askedUntil = now + Config.ASK_TIMEOUT_MS
-        Questions.askDrive(context)
+
+        val pending = goAsync()
+        AutoDetect.roughFix(context) { fix ->
+            try {
+                val moving = if (fix == null) {
+                    // Геолокация выключена: только длинная серия «в машине».
+                    prefs.inCarStreak >= Config.AUTO_STREAK_WITHOUT_LOCATION
+                } else {
+                    val prev = prefs.lastFix
+                    // Два сигнала почти подряд — первую точку оставляем, сравниваем позже.
+                    if (prev == null || fix.time - prev.time >= Config.MOVE_MIN_GAP_MS) prefs.lastFix = fix
+                    AutoRules.movedLikeCar(prev, fix)
+                }
+                if (moving) {
+                    prefs.askedUntil = System.currentTimeMillis() + Config.ASK_TIMEOUT_MS
+                    prefs.lastFix = null
+                    prefs.inCarStreak = 0
+                    Questions.askDrive(context)
+                }
+            } finally {
+                pending.finish()
+            }
+        }
     }
 }
 

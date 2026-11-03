@@ -215,6 +215,8 @@ class MainActivity : ComponentActivity() {
 
     private fun startTrip(destination: String, target: LatLon?) {
         TripService.start(this, destination, target)
+        // Сначала приложение «вместе с поездкой» (например, Blitzer.de), потом карта — чтобы карта была сверху.
+        launchCompanion()
         // Кнопка «Запись»: без адреса — просто записываем, Google Maps не открываем.
         if (destination.isBlank()) return
         if (target == null) {
@@ -244,6 +246,23 @@ class MainActivity : ComponentActivity() {
     }
 
     fun stopTrip() = TripService.stop(this)
+
+    private fun launchCompanion() {
+        val pkg = prefs.companionPackage ?: return
+        val launch = packageManager.getLaunchIntentForPackage(pkg) ?: return // удалили — молча пропускаем
+        try {
+            startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: Exception) {
+            // Не открылось — поездка всё равно записывается.
+        }
+    }
+
+    /** Выбор приложения «вместе с поездкой». null — ничего не запускать. */
+    fun setCompanion(app: LaunchableApp?) {
+        prefs.companionPackage = app?.packageName
+        prefs.companionLabel = app?.label
+        AppState.dataChanged()
+    }
 
     // --- Места и адреса ---
 
