@@ -94,6 +94,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.play.services.location)
     implementation(libs.androidx.fragment)
+    implementation(libs.mlkit.text)
 
     testImplementation(libs.junit)
 }

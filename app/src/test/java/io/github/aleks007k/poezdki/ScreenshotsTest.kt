@@ -66,12 +66,12 @@ class ScreenshotsTest {
 
     @Test
     fun main() = shot("1_main") {
-        MainContent(places, 142_000.0, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(places, 142_000.0, no, no, no, mapOf("PLN" to 4.3), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
     fun mainEmpty() = shot("1b_main_empty") {
-        MainContent(emptyMap(), 0.0, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(emptyMap(), 0.0, no, no, no, emptyMap(), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
@@ -82,12 +82,12 @@ class ScreenshotsTest {
 
     @Test
     fun summary() = shot("3_summary") {
-        SummaryContent("12–18 октября", false, false, trips, places, {}, no, no, {}, no, no)
+        SummaryContent("12–18 октября", false, false, trips, places, 78.21, {}, no, no, {}, no, no)
     }
 
     @Test
     fun summaryEmpty() = shot("3b_summary_empty") {
-        SummaryContent("5–11 октября", false, true, emptyList(), places, {}, no, no, {}, no, no)
+        SummaryContent("5–11 октября", false, true, emptyList(), places, 0.0, {}, no, no, {}, no, no)
     }
 
     @Test
@@ -129,5 +129,25 @@ class ScreenshotsTest {
     @Test
     fun setupActivity() = shot("7c_setup_activity") {
         SetupStepScreen(SetupStep.ACTIVITY, no, no)
+    }
+
+    private val refuels = listOf(
+        Refuel(1, at(2, 17, 42), 42.30, 78.21, "EUR", 1.0, 84_912.0, true, "/x.jpg"),
+        Refuel(2, at(20, 9, 10), 55.12, 357.73, "PLN", 4.30, null, false, null),
+        Refuel(3, at(8, 12, 0), 38.0, 69.54, "EUR", 1.0, 84_310.0, true, null),
+    )
+
+    @Test
+    fun fuelLog() = shot("8_fuel_log") {
+        FuelLogContent("Октябрь 2026", false, refuels, 6.4, 7.0, no, no, {}, no, no, {}, no)
+    }
+
+    @Test
+    fun refuelForm() = shot("9_refuel_form") {
+        RefuelForm(
+            RefuelDraft(date = java.time.LocalDate.of(2026, 10, 20), liters = "55,12", price = "6,49", total = "357,73",
+                currency = "PLN", rate = "4,3", full = false),
+            {}, no, no, no, no, no,
+        )
     }
 }

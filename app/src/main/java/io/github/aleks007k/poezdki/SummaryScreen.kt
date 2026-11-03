@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,15 +56,19 @@ fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Un
 
     var trips by remember { mutableStateOf<List<Trip>>(emptyList()) }
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
+    var refueled by remember { mutableStateOf(0.0) }
     LaunchedEffect(period, version, car) {
         val loaded = withContext(Dispatchers.IO) {
             db.trips(period.startMillis(zone), period.endMillis(zone)) to db.places()
+        }
+        refueled = withContext(Dispatchers.IO) {
+            db.refuels(period.startMillis(zone), period.endMillis(zone)).sumOf { it.totalEur }
         }
         trips = loaded.first.map { it.withCarCosts(car) }
         places = loaded.second
     }
     SummaryContent(
-        periodLabel(period, monthMode), monthMode, canGoLater = offset < 0, trips, places,
+        periodLabel(period, monthMode), monthMode, canGoLater = offset < 0, trips, places, refueled,
         onMode = { monthMode = it; offset = 0 }, onEarlier = { offset-- }, onLater = { offset++ },
         onTrip = onTrip, onCar = onCar, onBack = onBack,
     )
@@ -76,6 +81,7 @@ fun SummaryContent(
     canGoLater: Boolean,
     trips: List<Trip>,
     places: Map<Int, Place>,
+    refueledEur: Double,
     onMode: (Boolean) -> Unit,
     onEarlier: () -> Unit,
     onLater: () -> Unit,
@@ -109,7 +115,7 @@ fun SummaryContent(
                     SmallStat(Modifier.weight(1f), Format.number(trips.sumOf { it.liters }, 1), stringResource(R.string.caption_liters))
                 }
             }
-            item { CostPlate(trips) }
+            item { CostPlate(trips, refueledEur) }
             if (trips.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
@@ -150,7 +156,7 @@ private fun SmallStat(modifier: Modifier, value: String, caption: String) {
 
 /** «Машина обошлась» + полоска топливо / износ / содержание. */
 @Composable
-private fun CostPlate(trips: List<Trip>) {
+private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
     val context = LocalContext.current
     val fuel = trips.sumOf { it.fuel }
     val wear = trips.sumOf { it.wear }
@@ -174,6 +180,16 @@ private fun CostPlate(trips: List<Trip>) {
                 Legend(C.Amber, context.getString(R.string.legend_fuel, Format.money(fuel)))
                 Legend(C.Blue, context.getString(R.string.legend_wear, Format.money(wear)))
                 Legend(C.Teal, context.getString(R.string.legend_upkeep, Format.money(upkeep)))
+            }
+            // Сколько реально заплачено на заправках за этот период (по чекам).
+            if (refueledEur > 0) {
+                HorizontalDivider(color = C.Line)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Ico(R.drawable.ic_fuel, C.Amber, 18.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.refueled), color = C.Soft, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                    Big(moneyText(context, refueledEur), 18, C.Amber)
+                }
             }
         }
     }

@@ -49,6 +49,7 @@ fun CarScreen(
     onFixAuto: () -> Unit = {},
     companionLabel: String? = null,
     onCompanion: (LaunchableApp?) -> Unit = {},
+    onRefuels: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
@@ -105,6 +106,8 @@ fun CarScreen(
         }
 
         Section(stringResource(R.string.sec_fuel), C.Amber)
+        // Журнал заправок: чеки, сумма за месяц, реальный расход.
+        OutlineLink(R.drawable.ic_fuel, stringResource(R.string.refuels_title), onRefuels)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Field(stringResource(R.string.liters_city), l100City, { l100City = it }, Modifier.weight(1f), placeholder = l100)
             Field(stringResource(R.string.liters_highway), l100, { l100 = it }, Modifier.weight(1f))

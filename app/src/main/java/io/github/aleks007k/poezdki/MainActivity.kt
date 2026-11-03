@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,32 @@ class MainActivity : ComponentActivity() {
 
     var setupStep by mutableStateOf<SetupStep?>(null)
         private set
+
+    /** Открытая форма заправки (null — закрыта). */
+    var refuelDraft by mutableStateOf<RefuelDraft?>(null)
+        private set
+
+    /** Курсы, которые пора подтвердить (раз в месяц, если были заправки не в евро). */
+    var ratesToCheck by mutableStateOf<Map<String, Double>>(emptyMap())
+        private set
+
+    private var cameraFile: java.io.File? = null
+
+    private val takePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val f = cameraFile
+        if (ok && f != null) {
+            onReceiptPhoto(Uri.fromFile(f))
+        } else if (cameraOpenedForm) {
+            // Открыли камеру кнопкой ⛽ и передумали — пустую форму не оставляем.
+            refuelDraft = null
+        }
+        cameraOpenedForm = false
+    }
+    private var cameraOpenedForm = false
+
+    private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) onReceiptPhoto(uri)
+    }
 
     /** Поездка, которая ждёт разрешения или включения GPS. */
     private var pending: Pair<String, LatLon?>? = null
@@ -111,6 +138,7 @@ class MainActivity : ComponentActivity() {
         refreshSetup()
         TripService.resumeIfNeeded(this)
         AutoDetect.register(this)
+        refreshRatesCheck()
     }
 
     // --- Первый запуск ---
@@ -247,6 +275,138 @@ class MainActivity : ComponentActivity() {
     }
 
     fun stopTrip() = TripService.stop(this)
+
+    // --- Заправки ---
+
+    private fun blankDraft(): RefuelDraft {
+        val cur = prefs.lastCurrency
+        return RefuelDraft(
+            date = java.time.LocalDate.now(),
+            currency = cur,
+            rate = if (cur == "EUR") "" else prefs.rates[cur]?.let { Format.number(it, 4) }.orEmpty(),
+        )
+    }
+
+    /** Кнопка ⛽ / «Фото чека»: сразу камера, потом форма с прочитанными цифрами. */
+    fun newRefuelFromCamera() {
+        refuelDraft = blankDraft()
+        cameraOpenedForm = true
+        refuelCamera()
+    }
+
+    fun newRefuelManual() {
+        refuelDraft = blankDraft()
+    }
+
+    fun editRefuel(r: Refuel) {
+        refuelDraft = RefuelDraft.of(r)
+    }
+
+    fun updateRefuel(d: RefuelDraft) {
+        // Сменили валюту — подставить её последний курс.
+        val old = refuelDraft
+        refuelDraft = if (old != null && old.currency != d.currency) {
+            d.copy(rate = prefs.rates[d.currency]?.let { Format.number(it, 4) }.orEmpty())
+        } else d
+    }
+
+    fun refuelCamera() {
+        val (file, uri) = Receipts.cameraTarget(this)
+        cameraFile = file
+        try {
+            takePhoto.launch(uri)
+        } catch (e: ActivityNotFoundException) {
+            cameraOpenedForm = false
+        }
+    }
+
+    fun refuelGallery() {
+        pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
+    /** Фото чека получено: сохранить, прочитать текст, дописать цифры в форму. */
+    private fun onReceiptPhoto(uri: Uri) {
+        val draft = refuelDraft ?: return
+        lifecycleScope.launch {
+            refuelDraft = draft.copy(scanning = true)
+            val stored = Receipts.store(this@MainActivity, uri)
+            cameraFile?.delete()
+            if (stored == null) {
+                refuelDraft = refuelDraft?.copy(scanning = false, scanEmpty = true)
+                return@launch
+            }
+            val (file, bitmap) = stored
+            refuelDraft?.photo?.takeIf { it != file.path && draft.id == 0L }?.let { Receipts.delete(it) }
+            refuelDraft = refuelDraft?.copy(photo = file.path)
+            val text = Receipts.readText(bitmap)
+            val parsed = text?.let { ReceiptParser.parse(it) } ?: ParsedReceipt()
+            refuelDraft = refuelDraft?.merge(parsed, prefs.rates)
+        }
+    }
+
+    fun cancelRefuel() {
+        val d = refuelDraft ?: return
+        // Новая заправка не сохранена — её фото не нужно.
+        if (d.id == 0L) Receipts.delete(d.photo)
+        refuelDraft = null
+    }
+
+    /** Сохранить. true — сохранено (форму закрываем). */
+    fun saveRefuel(): Boolean {
+        val r = refuelDraft?.toRefuel() ?: return false
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                db.saveRefuel(r)
+                prefs.lastCurrency = r.currency
+                if (r.currency != "EUR") prefs.rates = prefs.rates + (r.currency to r.rate)
+                // Цена литра для расчётов — по самому свежему чеку.
+                val newest = db.refuels().maxByOrNull { it.time }
+                if (newest != null && newest.liters > 0) prefs.car = prefs.car.copy(pricePerLiter = newest.priceEur)
+            }
+            refreshRatesCheck()
+            AppState.dataChanged()
+        }
+        refuelDraft = null
+        return true
+    }
+
+    fun deleteRefuel() {
+        val d = refuelDraft ?: return
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { db.deleteRefuel(d.id) }
+            Receipts.delete(d.photo)
+            AppState.dataChanged()
+        }
+        refuelDraft = null
+    }
+
+    /** Реальный расход по заправкам — в расчёты (вместо «город / трасса»). */
+    fun useRealConsumption(l100: Double) {
+        prefs.car = prefs.car.copy(litersPer100 = l100, litersCity = 0.0)
+        AppState.dataChanged()
+    }
+
+    private fun currentMonth() = java.time.YearMonth.now().toString()
+
+    /** Раз в месяц: были ли заправки не в евро за 3 месяца — тогда спросить про курс. */
+    private fun refreshRatesCheck() {
+        if (prefs.ratesConfirmedMonth == currentMonth()) {
+            ratesToCheck = emptyMap()
+            return
+        }
+        lifecycleScope.launch {
+            val since = java.time.LocalDate.now().minusMonths(3).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val used = withContext(Dispatchers.IO) { db.refuels(since).map { it.currency }.filter { it != "EUR" }.toSet() }
+            val rates = prefs.rates
+            ratesToCheck = used.mapNotNull { c -> rates[c]?.let { c to it } }.toMap()
+        }
+    }
+
+    fun confirmRates(newRates: Map<String, Double>? = null) {
+        if (newRates != null) prefs.rates = prefs.rates + newRates
+        prefs.ratesConfirmedMonth = currentMonth()
+        ratesToCheck = emptyMap()
+    }
 
     private fun launchCompanion() {
         val pkg = prefs.companionPackage ?: return

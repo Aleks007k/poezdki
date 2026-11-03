@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class Screen { MAIN, SUMMARY, TRIP, CAR }
+private enum class Screen { MAIN, SUMMARY, TRIP, CAR, FUEL }
 
 @Composable
 fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
@@ -31,6 +31,8 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
         var carBack by rememberSaveable { mutableStateOf(Screen.SUMMARY) }
         val step = activity.setupStep
         val current = live
+        val draft = activity.refuelDraft
+        var editRates by remember { mutableStateOf(false) }
 
         fun openCar(from: Screen) {
             carBack = from
@@ -40,8 +42,23 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp)) {
             // Во время записи на других экранах — полоска; нажал — назад к поездке.
             if (current != null && screen != Screen.MAIN) RecordingBar(current.distanceM) { screen = Screen.MAIN }
+            if (editRates) RatesDialog(
+                activity.ratesToCheck,
+                onSave = { activity.confirmRates(it); editRates = false },
+                onDismiss = { editRates = false },
+            )
             Box(Modifier.weight(1f)) {
                 when {
+                    // Форма заправки — поверх всего, кроме первого запуска.
+                    draft != null && step == null -> {
+                        BackHandler { activity.cancelRefuel() }
+                        RefuelForm(
+                            draft, onChange = activity::updateRefuel,
+                            onCamera = activity::refuelCamera, onGallery = activity::refuelGallery,
+                            onSave = { if (activity.saveRefuel()) screen = Screen.FUEL },
+                            onDelete = activity::deleteRefuel, onCancel = activity::cancelRefuel,
+                        )
+                    }
                     current != null && screen == Screen.MAIN -> TripScreen(
                         current, prefs.activeDestination, car, activity::stopTrip,
                         onSummary = { screen = Screen.SUMMARY },
@@ -65,6 +82,15 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                             onCar = { openCar(Screen.TRIP) },
                         )
                     }
+                    screen == Screen.FUEL -> {
+                        BackHandler { screen = Screen.MAIN }
+                        FuelLogScreen(
+                            db, car,
+                            onOpen = activity::editRefuel, onCamera = activity::newRefuelFromCamera,
+                            onManual = activity::newRefuelManual, onUseConsumption = activity::useRealConsumption,
+                            onBack = { screen = Screen.MAIN },
+                        )
+                    }
                     screen == Screen.CAR -> CarScreen(
                         car,
                         onBack = { screen = carBack },
@@ -74,8 +100,13 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         onFixAuto = activity::openAppSettings,
                         companionLabel = prefs.companionLabel,
                         onCompanion = activity::setCompanion,
+                        onRefuels = { screen = Screen.FUEL },
                     )
-                    else -> MainScreen(db, activity, onSummary = { screen = Screen.SUMMARY })
+                    else -> MainScreen(
+                        db, activity, onSummary = { screen = Screen.SUMMARY }, onFuelLog = { screen = Screen.FUEL },
+                        ratesToCheck = activity.ratesToCheck,
+                        onRatesOk = { activity.confirmRates() }, onRatesEdit = { editRates = true },
+                    )
                 }
             }
         }

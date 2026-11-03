@@ -75,6 +75,24 @@ class Prefs(context: Context) {
             e.apply()
         }
 
+    /** Курсы валют, введённые вручную: сколько единиц за 1 € («PLN» → 4.3). */
+    var rates: Map<String, Double>
+        get() = p.getString("rates", "").orEmpty().split(';').mapNotNull { part ->
+            val i = part.indexOf('=')
+            if (i <= 0) null else part.substring(0, i) to (part.substring(i + 1).toDoubleOrNull() ?: return@mapNotNull null)
+        }.toMap()
+        set(v) { p.edit().putString("rates", v.entries.joinToString(";") { "${it.key}=${it.value}" }).apply() }
+
+    /** Месяц («2026-11»), за который уже подтвердили курсы. */
+    var ratesConfirmedMonth: String?
+        get() = p.getString("rates_month", null)
+        set(v) { p.edit().putString("rates_month", v).apply() }
+
+    /** Валюта последней заправки — подставляем, если на чеке её не видно. */
+    var lastCurrency: String
+        get() = p.getString("last_currency", "EUR") ?: "EUR"
+        set(v) { p.edit().putString("last_currency", v).apply() }
+
     /** Запускать вместе с поездкой (например, Blitzer.de): пакет и название. Пусто — ничего. */
     var companionPackage: String?
         get() = p.getString("companion_pkg", null)

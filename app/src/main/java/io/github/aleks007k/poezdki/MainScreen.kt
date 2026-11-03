@@ -3,6 +3,8 @@ package io.github.aleks007k.poezdki
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,7 +58,10 @@ private sealed interface PlaceEdit {
 }
 
 @Composable
-fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
+fun MainScreen(
+    db: Db, activity: MainActivity, onSummary: () -> Unit, onFuelLog: () -> Unit = {},
+    ratesToCheck: Map<String, Double> = emptyMap(), onRatesOk: () -> Unit = {}, onRatesEdit: () -> Unit = {},
+) {
     val version by AppState.dataVersion.collectAsState()
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
     var weekMeters by remember { mutableStateOf(0.0) }
@@ -72,17 +77,26 @@ fun MainScreen(db: Db, activity: MainActivity, onSummary: () -> Unit) {
     MainContent(
         places, weekMeters,
         onRecord = activity::recordNow,
+        onRefuel = activity::newRefuelFromCamera,
+        onFuelLog = onFuelLog,
+        ratesToCheck = ratesToCheck, onRatesOk = onRatesOk, onRatesEdit = onRatesEdit,
         onGo = activity::go, onSavePlace = activity::savePlace, onAddPlace = activity::addPlace,
         onDeletePlace = activity::deletePlace, onSummary = onSummary,
     )
 }
 
 /** Сам экран — без базы данных, чтобы его можно было показать с примерными данными. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainContent(
     places: Map<Int, Place>,
     weekMeters: Double,
     onRecord: () -> Unit,
+    onRefuel: () -> Unit,
+    onFuelLog: () -> Unit,
+    ratesToCheck: Map<String, Double>,
+    onRatesOk: () -> Unit,
+    onRatesEdit: () -> Unit,
     onGo: (String, LatLon?) -> Unit,
     onSavePlace: (Int, String?, String) -> Unit,
     onAddPlace: (String, String) -> Unit,
@@ -113,6 +127,13 @@ fun MainContent(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Big(stringResource(R.string.where), 34, modifier = Modifier.weight(1f))
+                // ⛽ — заправка: сразу камера для фото чека (долгое нажатие — журнал).
+                Box(
+                    Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).border(1.5.dp, C.Amber, RoundedCornerShape(16.dp))
+                        .combinedClickable(onClick = onRefuel, onLongClick = onFuelLog),
+                    contentAlignment = Alignment.Center,
+                ) { Ico(R.drawable.ic_fuel, C.Amber, 26.dp, stringResource(R.string.refuel_new)) }
+                Spacer(Modifier.width(10.dp))
                 // Записать поездку прямо сейчас — без адреса (если автозапись не сработала).
                 Row(
                     Modifier.clip(RoundedCornerShape(22.dp)).background(C.Amber).clickable(onClick = onRecord)
@@ -123,6 +144,13 @@ fun MainContent(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.record), color = C.OnAmber, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
+            }
+            if (ratesToCheck.isNotEmpty()) {
+                RatesBanner(
+                    ratesToCheck,
+                    java.time.format.DateTimeFormatter.ofPattern("LLLL").format(java.time.YearMonth.now()),
+                    onRatesOk, onRatesEdit,
+                )
             }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

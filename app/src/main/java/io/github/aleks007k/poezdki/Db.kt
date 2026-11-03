@@ -48,7 +48,7 @@ data class Place(val id: Int, val name: String?, val address: String?, val coord
 
 /** База данных SQLite. Лежит только в телефоне. */
 class Db private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, 2) {
+    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, 3) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -74,6 +74,19 @@ class Db private constructor(context: Context) :
             """CREATE TABLE places (
                 id INTEGER PRIMARY KEY, name TEXT, address TEXT, lat REAL, lon REAL)"""
         )
+        createRefuels(db)
+    }
+
+    /** Заправки: сумма в валюте чека, rate — сколько этой валюты за 1 €. */
+    private fun createRefuels(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE refuels (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                time INTEGER NOT NULL, liters REAL NOT NULL, total REAL NOT NULL,
+                currency TEXT NOT NULL, rate REAL NOT NULL,
+                odometer REAL, full INTEGER NOT NULL DEFAULT 0, photo TEXT)"""
+        )
+        db.execSQL("CREATE INDEX refuels_time ON refuels(time)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -85,6 +98,7 @@ class Db private constructor(context: Context) :
             db.execSQL("ALTER TABLE trips ADD COLUMN costs TEXT")
             db.execSQL("ALTER TABLE trips ADD COLUMN paid INTEGER NOT NULL DEFAULT 0")
         }
+        if (oldVersion < 3) createRefuels(db)
     }
 
     // --- Поездки ---
@@ -159,6 +173,51 @@ class Db private constructor(context: Context) :
         stoppedMs = c.getLong(c.getColumnIndexOrThrow("stopped_ms")),
         paid = c.getInt(c.getColumnIndexOrThrow("paid")) != 0,
     )
+
+    // --- Заправки ---
+
+    fun saveRefuel(r: Refuel): Long {
+        val v = ContentValues().apply {
+            put("time", r.time)
+            put("liters", r.liters)
+            put("total", r.total)
+            put("currency", r.currency)
+            put("rate", r.rate)
+            if (r.odometer != null) put("odometer", r.odometer) else putNull("odometer")
+            put("full", if (r.full) 1 else 0)
+            put("photo", r.photo)
+        }
+        return if (r.id > 0) {
+            writableDatabase.update("refuels", v, "id = ?", arrayOf(r.id.toString()))
+            r.id
+        } else {
+            writableDatabase.insert("refuels", null, v)
+        }
+    }
+
+    fun deleteRefuel(id: Long) {
+        writableDatabase.delete("refuels", "id = ?", arrayOf(id.toString()))
+    }
+
+    fun refuels(fromMillis: Long = 0, toMillis: Long = Long.MAX_VALUE): List<Refuel> =
+        readableDatabase.rawQuery(
+            "SELECT * FROM refuels WHERE time >= ? AND time < ? ORDER BY time DESC",
+            arrayOf(fromMillis.toString(), toMillis.toString()),
+        ).use { c ->
+            c.list {
+                Refuel(
+                    id = it.getLong(it.getColumnIndexOrThrow("id")),
+                    time = it.getLong(it.getColumnIndexOrThrow("time")),
+                    liters = it.getDouble(it.getColumnIndexOrThrow("liters")),
+                    total = it.getDouble(it.getColumnIndexOrThrow("total")),
+                    currency = it.getString(it.getColumnIndexOrThrow("currency")),
+                    rate = it.getDouble(it.getColumnIndexOrThrow("rate")),
+                    odometer = it.dbl("odometer"),
+                    full = it.getInt(it.getColumnIndexOrThrow("full")) != 0,
+                    photo = it.str("photo"),
+                )
+            }
+        }
 
     // --- Точки GPS ---
 

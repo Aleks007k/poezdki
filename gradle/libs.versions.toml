@@ -12,6 +12,8 @@ playServicesLocation = "21.3.0"
 # Сервисы Google тянут старый Fragment 1.0; свежий нужен для запроса разрешений.
 fragment = "1.8.5"
 junit = "4.13.2"
+# Распознавание текста на фото чека — прямо в телефоне, без интернета.
+mlkitText = "16.0.1"
 # Снимки экранов в CI (без телефона и эмулятора).
 paparazzi = "1.3.5"
 
@@ -25,6 +27,7 @@ androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
+mlkit-text = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
