@@ -58,6 +58,13 @@
     <!-- Итоги -->
     <string name="week">Неделя</string>
     <string name="month">Месяц</string>
+    <string name="summary_line">%1$s км · %2$s · %3$s л</string>
+    <plurals name="trips_count">
+        <item quantity="one">%d поездка</item>
+        <item quantity="few">%d поездки</item>
+        <item quantity="many">%d поездок</item>
+        <item quantity="other">%d поездки</item>
+    </plurals>
     <string name="whole_year">весь %1$s год ›</string>
     <string name="previous">Раньше</string>
     <string name="next_period">Позже</string>

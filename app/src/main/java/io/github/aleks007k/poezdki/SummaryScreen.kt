@@ -104,39 +104,45 @@ fun SummaryContent(
     onCar: () -> Unit,
     onBack: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        BackHeader(stringResource(R.string.summary), onBack)
-        // Неделя | Месяц (год — ссылкой под названием месяца, без третьей кнопки)
-        Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 4.dp) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Segment(stringResource(R.string.week), mode == PeriodMode.WEEK, Modifier.weight(1f)) { onMode(PeriodMode.WEEK) }
-                Segment(stringResource(R.string.month), mode == PeriodMode.MONTH, Modifier.weight(1f)) { onMode(PeriodMode.MONTH) }
-            }
-        }
+    Column(Modifier.fillMaxSize().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Шапка: «‹ Итоги» и справа — машина и её расходы.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SquareButton(R.drawable.ic_chevron_left, stringResource(R.string.previous), C.Text, onEarlier)
-            Text(
-                periodText, fontFamily = Unbounded, fontWeight = FontWeight.Medium, fontSize = 18.sp,
-                textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            )
-            SquareButton(R.drawable.ic_chevron_right, stringResource(R.string.next_period), C.Text, onLater, enabled = canGoLater)
-        }
-        // Месяц → «весь 2026 год ›». Год — назад к месяцам теми же кнопками «Неделя / Месяц».
-        if (mode == PeriodMode.MONTH && yearText != null) {
-            Text(
-                stringResource(R.string.whole_year, yearText), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 0.dp).clip(RoundedCornerShape(10.dp))
-                    .clickable { onMode(PeriodMode.YEAR) }.padding(vertical = 4.dp),
-            )
+            SquareButton(R.drawable.ic_chevron_left, stringResource(R.string.back), C.Text, onBack)
+            Spacer(Modifier.width(12.dp))
+            Big(stringResource(R.string.summary), 22, modifier = Modifier.weight(1f))
+            Box(
+                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).border(1.5.dp, C.Amber, RoundedCornerShape(14.dp))
+                    .clickable(onClick = onCar),
+                contentAlignment = Alignment.Center,
+            ) { Ico(R.drawable.ic_car, C.Amber, 26.dp, stringResource(R.string.car_link)) }
         }
 
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Всё остальное прокручивается: листаешь вниз — весь экран занимают поездки.
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallStat(Modifier.weight(1f), Format.km(trips.sumOf { it.distanceM }), stringResource(R.string.caption_km))
-                    SmallStat(Modifier.weight(1f), trips.size.toString(), stringResource(R.string.caption_trips))
-                    SmallStat(Modifier.weight(1f), Format.number(trips.sumOf { it.liters }, 1), stringResource(R.string.caption_liters))
+                // Неделя | Месяц (год — ссылкой под названием месяца).
+                Panel(Modifier.fillMaxWidth(), radius = 16.dp, padding = 4.dp) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Segment(stringResource(R.string.week), mode == PeriodMode.WEEK, Modifier.weight(1f)) { onMode(PeriodMode.WEEK) }
+                        Segment(stringResource(R.string.month), mode == PeriodMode.MONTH, Modifier.weight(1f)) { onMode(PeriodMode.MONTH) }
+                    }
+                }
+            }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+                    SquareButton(R.drawable.ic_chevron_left, stringResource(R.string.previous), C.Text, onEarlier)
+                    Column(Modifier.weight(1f).padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(periodText, fontFamily = Unbounded, fontWeight = FontWeight.Medium, fontSize = 18.sp, maxLines = 1)
+                        // Месяц → «весь 2026 год ›». Обратно — кнопками «Неделя / Месяц».
+                        if (mode == PeriodMode.MONTH && yearText != null) {
+                            Text(
+                                stringResource(R.string.whole_year, yearText), color = C.Amber, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onMode(PeriodMode.YEAR) }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                    SquareButton(R.drawable.ic_chevron_right, stringResource(R.string.next_period), C.Text, onLater, enabled = canGoLater)
                 }
             }
             item { CostPlate(trips, refueledEur) }
@@ -148,32 +154,18 @@ fun SummaryContent(
                 }
             }
             items(trips, key = { it.id }) { t -> TripCard(t, places) { onTrip(t.id) } }
+            item { Spacer(Modifier.height(12.dp)) }
         }
-
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            OutlineLink(R.drawable.ic_car, stringResource(R.string.car_link), onCar)
-        }
-        Spacer(Modifier.height(4.dp))
     }
 }
 
 @Composable
 private fun Segment(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.height(48.dp).clip(RoundedCornerShape(14.dp))
+        modifier.height(42.dp).clip(RoundedCornerShape(12.dp))
             .background(if (selected) C.Amber else Color.Transparent).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(text, color = if (selected) C.OnAmber else C.Muted, fontWeight = FontWeight.Bold, fontSize = 17.sp) }
-}
-
-@Composable
-private fun SmallStat(modifier: Modifier, value: String, caption: String) {
-    Panel(modifier, radius = 18.dp, padding = 0.dp) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Big(value, 20)
-            Text(caption, color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
 }
 
 /** «Машина обошлась» + полоска топливо / износ / содержание. */
@@ -185,7 +177,7 @@ private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
     val wear = trips.sumOf { it.wear }
     val upkeep = trips.sumOf { it.upkeep }
     Panel(Modifier.fillMaxWidth(), radius = 20.dp, padding = 0.dp) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(stringResource(R.string.car_cost), color = C.Soft, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
                 Big(moneyText(context, fuel + wear + upkeep), 22)
@@ -205,14 +197,20 @@ private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
                 Legend(C.Blue, context.getString(R.string.legend_wear, Format.money(wear)))
                 Legend(C.Teal, context.getString(R.string.legend_upkeep, Format.money(upkeep)))
             }
-            // Сколько реально заплачено на заправках за этот период (по чекам).
-            if (refueledEur > 0) {
-                HorizontalDivider(color = C.Line)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Ico(R.drawable.ic_fuel, C.Amber, 18.dp)
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.refueled), color = C.Soft, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                    Big(moneyText(context, refueledEur), 18, C.Amber)
+            // Одна строка вместо трёх плиток: км · поездки · литры, справа — заправлено по чекам.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    context.getString(
+                        R.string.summary_line, Format.km(trips.sumOf { it.distanceM }),
+                        context.resources.getQuantityString(R.plurals.trips_count, trips.size, trips.size),
+                        Format.number(trips.sumOf { it.liters }, 1),
+                    ),
+                    color = C.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f),
+                )
+                if (refueledEur > 0) {
+                    Ico(R.drawable.ic_fuel, C.Amber, 18.dp, stringResource(R.string.refueled))
+                    Spacer(Modifier.width(4.dp))
+                    Text(moneyText(context, refueledEur), color = C.Amber, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
             }
         }
