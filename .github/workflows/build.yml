@@ -66,6 +66,12 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk dist/Poezdki.apk
 
+      - name: Show APK size
+        run: |
+          ls -l dist/Poezdki.apk
+          echo "Самые большие части APK:"
+          unzip -lv dist/Poezdki.apk | sort -k3 -n -r | head -15 | awk '{print $3, $8}'
+
       - name: Show permissions
         run: |
           SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"

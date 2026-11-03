@@ -21,6 +21,11 @@ android {
         targetSdk = 35
         versionCode = buildNumber
         versionName = "0.1.$buildNumber"
+        // Только процессоры настоящих телефонов (все с ~2012 года). Варианты для
+        // компьютерных эмуляторов (x86) не нужны и раздували APK на ~20 МБ.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     // Подпись релиза.
@@ -45,8 +50,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Сжатие кода: убирает неиспользуемое из библиотек (приложение меньше, работает так же).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -75,6 +81,10 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        // Библиотеки распознавания текста хранятся в APK сжатыми — файл для скачивания меньше.
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }
