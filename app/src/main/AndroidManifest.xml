@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        Приложению интернет не нужен: всё хранится и считается в телефоне.
+        Библиотеки (распознавание чеков Google ML Kit) просят интернет для своей
+        статистики — запрещаем на уровне Android, чтобы ничего не уходило наружу.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
     <!-- Местоположение: считать километры по GPS. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

@@ -76,7 +76,13 @@ jobs:
         run: |
           SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
           AAPT2=$(ls "$SDK"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n 1)
-          "$AAPT2" dump permissions dist/Poezdki.apk
+          "$AAPT2" dump permissions dist/Poezdki.apk | tee permissions.txt
+          # Интернет приложению запрещён — если какая-то библиотека снова его добавит, сборка остановится.
+          if grep -Eq "android.permission.(INTERNET|ACCESS_NETWORK_STATE)" permissions.txt; then
+            echo "::error::В приложении появилось разрешение на интернет — сборка остановлена."
+            exit 1
+          fi
+          echo "Интернета у приложения нет."
 
       - name: Verify signature
         if: steps.signing.outputs.ready == 'true'
