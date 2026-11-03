@@ -132,11 +132,19 @@ class TransitionReceiver : BroadcastReceiver() {
             if (ActivityRecognitionResult.hasResult(intent)) {
                 prefs.inCarStreak = 0
                 prefs.lastFix = null
+                // После «НЕТ»: ~10 минут не в машине — та поездка кончилась, можно снова спрашивать.
+                if (prefs.declinedDrive) {
+                    prefs.notInCarStreak = prefs.notInCarStreak + 1
+                    if (prefs.notInCarStreak >= Config.DECLINE_RESET_SAMPLES) prefs.declinedDrive = false
+                }
             }
             return
         }
         prefs.lastVehicleSignal = now
         prefs.inCarStreak = prefs.inCarStreak + 1
+        prefs.notInCarStreak = 0
+        // Сказал «НЕТ» на эту поездку (рабочая машина) — молчим, пока не выйдешь из машины.
+        if (prefs.declinedDrive) return
         // Запись уже идёт, недавно сказали «НЕТ» / «Стоп» или вопрос уже висит — молчим.
         if (TripService.running && prefs.hasActiveTrip) return
         if (now < prefs.autoMuteUntil || now < prefs.askedUntil) return

@@ -40,6 +40,7 @@ object Questions {
             .setContentTitle(context.getString(R.string.q_title))
             .setContentText(context.getString(R.string.q_text))
             .setContentIntent(yes) // нажал на само уведомление — тоже «ДА»
+            .setDeleteIntent(no) // смахнул — значит «НЕТ»
             .addAction(0, context.getString(R.string.yes), yes)
             .addAction(0, context.getString(R.string.no), no)
             .setAutoCancel(true)
@@ -60,10 +61,13 @@ object Questions {
     }
 }
 
-/** Нажали «НЕТ»: убрать вопрос и не спрашивать полчаса (автобус, такси, чужая машина). */
+/** «НЕТ» или смахнул вопрос: не спрашивать до конца этой поездки (рабочая машина, автобус, такси). */
 class AnswerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Questions.cancel(context)
-        Prefs(context).muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
+        val prefs = Prefs(context)
+        prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
+        prefs.declinedDrive = true
+        prefs.notInCarStreak = 0
     }
 }

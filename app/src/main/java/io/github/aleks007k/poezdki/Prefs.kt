@@ -45,6 +45,16 @@ class Prefs(context: Context) {
         autoMuteUntil = System.currentTimeMillis() + forMs
     }
 
+    /** Сказал «НЕТ» (или смахнул вопрос) — молчим до конца этой поездки. */
+    var declinedDrive: Boolean
+        get() = p.getBoolean("auto_declined", false)
+        set(v) { p.edit().putBoolean("auto_declined", v).apply() }
+
+    /** Сколько проверок подряд сказали «не в машине» после «НЕТ». */
+    var notInCarStreak: Int
+        get() = p.getInt("auto_not_car", 0)
+        set(v) { p.edit().putInt("auto_not_car", v).apply() }
+
     /** Сколько раз подряд Android сказал «в машине» (для случая без геолокации). */
     var inCarStreak: Int
         get() = p.getInt("auto_streak", 0)

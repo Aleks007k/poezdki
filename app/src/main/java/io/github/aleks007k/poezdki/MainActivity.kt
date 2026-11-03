@@ -214,6 +214,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startTrip(destination: String, target: LatLon?) {
+        prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
         // Сначала приложение «вместе с поездкой» (например, Blitzer.de), потом карта — чтобы карта была сверху.
         launchCompanion()
