@@ -160,7 +160,7 @@
     <string name="auto_title">Автозапись</string>
     <string name="refuels_title">Заправки</string>
     <string name="refuels_month_total">Заправлено за месяц</string>
-    <string name="refuels_summary">%1$d заправ. · %2$s л · в среднем %3$s €/л</string>
+    <string name="refuels_summary">Заправок: %1$d · %2$s л · в среднем %3$s €/л</string>
     <string name="refuels_empty">Заправок в этом месяце нет.\nСфотографируй чек — цифры впишутся сами.</string>
     <string name="refuel_photo">Фото чека</string>
     <string name="refuel_manual">Вручную</string>
