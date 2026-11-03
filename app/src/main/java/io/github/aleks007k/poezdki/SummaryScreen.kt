@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -46,13 +48,21 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/** За какой срок итоги. */
+enum class PeriodMode { WEEK, MONTH, YEAR }
+
 @Composable
 fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Unit, onBack: () -> Unit) {
-    var monthMode by rememberSaveable { mutableStateOf(false) }
+    var mode by rememberSaveable { mutableStateOf(PeriodMode.WEEK) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
     val version by AppState.dataVersion.collectAsState()
     val zone = ZoneId.systemDefault()
-    val period = if (monthMode) Period.month(LocalDate.now(), offset) else Period.week(LocalDate.now(), offset)
+    val today = LocalDate.now()
+    val period = when (mode) {
+        PeriodMode.WEEK -> Period.week(today, offset)
+        PeriodMode.MONTH -> Period.month(today, offset)
+        PeriodMode.YEAR -> Period.year(today, offset)
+    }
 
     var trips by remember { mutableStateOf<List<Trip>>(emptyList()) }
     var places by remember { mutableStateOf<Map<Int, Place>>(emptyMap()) }
@@ -68,8 +78,8 @@ fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Un
         places = loaded.second
     }
     SummaryContent(
-        periodLabel(period, monthMode), monthMode, canGoLater = offset < 0, trips, places, refueled,
-        onMode = { monthMode = it; offset = 0 }, onEarlier = { offset-- }, onLater = { offset++ },
+        periodLabel(period, mode), mode, canGoLater = offset < 0, trips, places, refueled,
+        onMode = { mode = it; offset = 0 }, onEarlier = { offset-- }, onLater = { offset++ },
         onTrip = onTrip, onCar = onCar, onBack = onBack,
     )
 }
@@ -77,12 +87,12 @@ fun SummaryScreen(db: Db, car: CarCosts, onTrip: (Long) -> Unit, onCar: () -> Un
 @Composable
 fun SummaryContent(
     periodText: String,
-    monthMode: Boolean,
+    mode: PeriodMode,
     canGoLater: Boolean,
     trips: List<Trip>,
     places: Map<Int, Place>,
     refueledEur: Double,
-    onMode: (Boolean) -> Unit,
+    onMode: (PeriodMode) -> Unit,
     onEarlier: () -> Unit,
     onLater: () -> Unit,
     onTrip: (Long) -> Unit,
@@ -91,11 +101,12 @@ fun SummaryContent(
 ) {
     Column(Modifier.fillMaxSize().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         BackHeader(stringResource(R.string.summary), onBack)
-        // Неделя | Месяц
+        // Неделя | Месяц | Год
         Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 4.dp) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Segment(stringResource(R.string.week), !monthMode, Modifier.weight(1f)) { onMode(false) }
-                Segment(stringResource(R.string.month), monthMode, Modifier.weight(1f)) { onMode(true) }
+                Segment(stringResource(R.string.week), mode == PeriodMode.WEEK, Modifier.weight(1f)) { onMode(PeriodMode.WEEK) }
+                Segment(stringResource(R.string.month), mode == PeriodMode.MONTH, Modifier.weight(1f)) { onMode(PeriodMode.MONTH) }
+                Segment(stringResource(R.string.year), mode == PeriodMode.YEAR, Modifier.weight(1f)) { onMode(PeriodMode.YEAR) }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -123,9 +134,7 @@ fun SummaryContent(
                     }
                 }
             }
-            itemsIndexed(trips, key = { _, t -> t.id }) { i, t ->
-                TripCard(t, places, big = i == 0) { onTrip(t.id) }
-            }
+            items(trips, key = { it.id }) { t -> TripCard(t, places) { onTrip(t.id) } }
         }
 
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -155,6 +164,7 @@ private fun SmallStat(modifier: Modifier, value: String, caption: String) {
 }
 
 /** «Машина обошлась» + полоска топливо / износ / содержание. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
     val context = LocalContext.current
@@ -176,7 +186,8 @@ private fun CostPlate(trips: List<Trip>, refueledEur: Double) {
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            // Подписи переносятся, если суммы большие (за год), а не налезают друг на друга.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Legend(C.Amber, context.getString(R.string.legend_fuel, Format.money(fuel)))
                 Legend(C.Blue, context.getString(R.string.legend_wear, Format.money(wear)))
                 Legend(C.Teal, context.getString(R.string.legend_upkeep, Format.money(upkeep)))
@@ -204,36 +215,28 @@ private fun Legend(color: Color, text: String) {
     }
 }
 
+/** Поездка в списке — две строки: маршрут и сумма; дата, км и время езды. */
 @Composable
-private fun TripCard(t: Trip, places: Map<Int, Place>, big: Boolean, onClick: () -> Unit) {
+private fun TripCard(t: Trip, places: Map<Int, Place>, onClick: () -> Unit) {
     val context = LocalContext.current
-    Panel(Modifier.fillMaxWidth(), radius = if (big) 24.dp else 18.dp, padding = 0.dp, onClick = onClick) {
-        Column(
-            Modifier.padding(horizontal = if (big) 18.dp else 14.dp, vertical = if (big) 18.dp else 12.dp),
-            verticalArrangement = Arrangement.spacedBy(if (big) 8.dp else 4.dp),
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    context.getString(R.string.time_range, shortDate(t.startTime), timeOf(t.startTime), timeOf(t.endTime)),
-                    color = C.Muted, fontSize = if (big) 14.sp else 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f),
-                )
-                Big(moneyText(context, if (t.paid) t.fare else t.total), if (big) 20 else 16)
-            }
-            Text(
-                routeText(context, t, places), fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 17.sp,
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
+    Panel(Modifier.fillMaxWidth(), radius = 16.dp, padding = 0.dp, onClick = onClick) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    context.getString(
-                        R.string.trip_line, kmText(context, t.distanceM),
-                        context.getString(R.string.drive_time, durationText(context, t.movingMs)), litersText(context, t.liters),
-                    ),
-                    color = C.Soft, fontSize = if (big) 16.sp else 14.sp, modifier = Modifier.weight(1f),
+                    routeText(context, t, places), fontWeight = FontWeight.Bold, fontSize = 16.sp,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(10.dp))
+                Big(moneyText(context, if (t.paid) t.fare else t.total), 15)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    context.getString(R.string.trip_line, shortDate(t.startTime), kmText(context, t.distanceM), durationText(context, t.movingMs)),
+                    color = C.Muted, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f),
                 )
                 if (t.paid) {
-                    Box(Modifier.size(28.dp).clip(CircleShape).background(C.Amber), contentAlignment = Alignment.Center) {
-                        Text("€", color = C.OnAmber, fontFamily = Unbounded, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Box(Modifier.size(20.dp).clip(CircleShape).background(C.Amber), contentAlignment = Alignment.Center) {
+                        Text("€", color = C.OnAmber, fontFamily = Unbounded, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
             }
@@ -241,8 +244,9 @@ private fun TripCard(t: Trip, places: Map<Int, Place>, big: Boolean, onClick: ()
     }
 }
 
-fun periodLabel(p: Period, monthMode: Boolean): String {
-    if (monthMode) {
+fun periodLabel(p: Period, mode: PeriodMode): String {
+    if (mode == PeriodMode.YEAR) return p.from.year.toString()
+    if (mode == PeriodMode.MONTH) {
         return DateTimeFormatter.ofPattern("LLLL yyyy").format(p.from).replaceFirstChar { it.uppercase() }
     }
     val last = p.toExclusive.minusDays(1)

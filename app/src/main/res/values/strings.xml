@@ -58,6 +58,7 @@
     <!-- Итоги -->
     <string name="week">Неделя</string>
     <string name="month">Месяц</string>
+    <string name="year">Год</string>
     <string name="previous">Раньше</string>
     <string name="next_period">Позже</string>
     <string name="caption_km">км</string>
@@ -71,10 +72,8 @@
     <string name="unknown_place">…</string>
     <string name="car_link">VIP Борт\u00A0№1: расходы</string>
     <string name="paid_badge">Поездка за деньги</string>
-    <string name="time_range">%1$s · %2$s–%3$s</string>
     <string name="route">%1$s → %2$s</string>
     <string name="trip_line">%1$s · %2$s · %3$s</string>
-    <string name="drive_time">%1$s езды</string>
 
     <!-- Поездка подробно -->
     <string name="from_label">%1$s · откуда</string>

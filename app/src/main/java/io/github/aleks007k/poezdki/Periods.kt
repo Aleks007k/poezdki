@@ -21,5 +21,11 @@ data class Period(val from: LocalDate, val toExclusive: LocalDate) {
             val ym = YearMonth.from(today).plusMonths(offset.toLong())
             return Period(ym.atDay(1), ym.plusMonths(1).atDay(1))
         }
+
+        /** Календарный год. */
+        fun year(today: LocalDate, offset: Int): Period {
+            val y = today.year + offset
+            return Period(LocalDate.of(y, 1, 1), LocalDate.of(y + 1, 1, 1))
+        }
     }
 }

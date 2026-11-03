@@ -66,12 +66,12 @@ class ScreenshotsTest {
 
     @Test
     fun main() = shot("1_main") {
-        MainContent(places, 142_000.0, no, no, no, mapOf("PLN" to 4.3), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(places, 142_000.0, no, no, mapOf("PLN" to 4.3), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
     fun mainEmpty() = shot("1b_main_empty") {
-        MainContent(emptyMap(), 0.0, no, no, no, emptyMap(), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
+        MainContent(emptyMap(), 0.0, no, no, emptyMap(), no, no, { _, _ -> }, { _, _, _ -> }, { _, _ -> }, {}, no)
     }
 
     @Test
@@ -82,12 +82,12 @@ class ScreenshotsTest {
 
     @Test
     fun summary() = shot("3_summary") {
-        SummaryContent("12–18 октября", false, false, trips, places, 78.21, {}, no, no, {}, no, no)
+        SummaryContent("12–18 октября", PeriodMode.WEEK, false, trips, places, 78.21, {}, no, no, {}, no, no)
     }
 
     @Test
     fun summaryEmpty() = shot("3b_summary_empty") {
-        SummaryContent("5–11 октября", false, true, emptyList(), places, 0.0, {}, no, no, {}, no, no)
+        SummaryContent("5–11 октября", PeriodMode.WEEK, true, emptyList(), places, 0.0, {}, no, no, {}, no, no)
     }
 
     @Test

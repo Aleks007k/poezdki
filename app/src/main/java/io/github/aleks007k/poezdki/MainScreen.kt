@@ -77,7 +77,6 @@ fun MainScreen(
     MainContent(
         places, weekMeters,
         onRecord = activity::recordNow,
-        onRefuel = activity::newRefuelFromCamera,
         onFuelLog = onFuelLog,
         ratesToCheck = ratesToCheck, onRatesOk = onRatesOk, onRatesEdit = onRatesEdit,
         onGo = activity::go, onSavePlace = activity::savePlace, onAddPlace = activity::addPlace,
@@ -92,7 +91,6 @@ fun MainContent(
     places: Map<Int, Place>,
     weekMeters: Double,
     onRecord: () -> Unit,
-    onRefuel: () -> Unit,
     onFuelLog: () -> Unit,
     ratesToCheck: Map<String, Double>,
     onRatesOk: () -> Unit,
@@ -127,10 +125,10 @@ fun MainContent(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Big(stringResource(R.string.where), 34, modifier = Modifier.weight(1f))
-                // ⛽ — заправка: сразу камера для фото чека (долгое нажатие — журнал).
+                // ⛽ — открывает «Заправки» (там сумма за месяц и кнопка «Фото чека»).
                 Box(
                     Modifier.size(54.dp).clip(RoundedCornerShape(18.dp)).border(1.5.dp, C.Amber, RoundedCornerShape(18.dp))
-                        .combinedClickable(onClick = onRefuel, onLongClick = onFuelLog),
+                        .clickable(onClick = onFuelLog),
                     contentAlignment = Alignment.Center,
                 ) { Ico(R.drawable.ic_fuel, C.Amber, 30.dp, stringResource(R.string.refuel_new)) }
                 Spacer(Modifier.width(10.dp))
