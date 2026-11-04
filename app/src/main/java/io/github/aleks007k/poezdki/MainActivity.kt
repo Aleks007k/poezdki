@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity() {
         intent.action = null // чтобы при повороте экрана не начать снова
         Questions.cancel(this)
         prefs.askedUntil = 0
+        prefs.askOpen = false
         if (!prefs.hasActiveTrip) recordNow()
     }
 
@@ -410,11 +411,18 @@ class MainActivity : ComponentActivity() {
 
     private fun launchCompanion() {
         val pkg = prefs.companionPackage ?: return
-        val launch = packageManager.getLaunchIntentForPackage(pkg) ?: return // удалили — молча пропускаем
+        val label = prefs.companionLabel ?: pkg
+        val launch = packageManager.getLaunchIntentForPackage(pkg)
+        if (launch == null) {
+            // Приложение удалили или Android его не видит.
+            Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
+            return
+        }
         try {
             startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: Exception) {
-            // Не открылось — поездка всё равно записывается.
+            // Не открылось — поездка всё равно записывается, но скажем об этом.
+            Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
         }
     }
 

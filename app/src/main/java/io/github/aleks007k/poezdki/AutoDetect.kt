@@ -145,6 +145,13 @@ class TransitionReceiver : BroadcastReceiver() {
         prefs.notInCarStreak = 0
         // Сказал «НЕТ» на эту поездку (рабочая машина) — молчим, пока не выйдешь из машины.
         if (prefs.declinedDrive) return
+        // Спросили и не ответили, а вопрос уже исчез — значит «не сейчас»: до конца поездки не спрашиваем.
+        if (prefs.askOpen && now >= prefs.askedUntil) {
+            prefs.askOpen = false
+            prefs.declinedDrive = true
+            prefs.notInCarStreak = 0
+            return
+        }
         // Запись уже идёт, недавно сказали «НЕТ» / «Стоп» или вопрос уже висит — молчим.
         if (TripService.running && prefs.hasActiveTrip) return
         if (now < prefs.autoMuteUntil || now < prefs.askedUntil) return
@@ -164,6 +171,7 @@ class TransitionReceiver : BroadcastReceiver() {
                 }
                 if (moving) {
                     prefs.askedUntil = System.currentTimeMillis() + Config.ASK_TIMEOUT_MS
+                    prefs.askOpen = true
                     prefs.lastFix = null
                     prefs.inCarStreak = 0
                     Questions.askDrive(context)

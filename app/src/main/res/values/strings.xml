@@ -199,6 +199,7 @@
     <string name="rates_edit_title">Курсы валют</string>
     <string name="companion_title">Вместе с поездкой</string>
     <string name="companion_label">Открывать приложение</string>
+    <string name="companion_failed">Не удалось открыть %1$s</string>
     <string name="companion_none">Ничего не открывать</string>
     <string name="companion_pick">Что открывать?</string>
     <string name="companion_warning">Откроется в начале каждой поездки, перед картой. Помни: в Германии водителю нельзя пользоваться предупреждениями о камерах (75 € и 1 балл).</string>

@@ -45,6 +45,11 @@ class Prefs(context: Context) {
         autoMuteUntil = System.currentTimeMillis() + forMs
     }
 
+    /** Вопрос «Едешь?» показан и на него ещё не ответили. */
+    var askOpen: Boolean
+        get() = p.getBoolean("auto_ask_open", false)
+        set(v) { p.edit().putBoolean("auto_ask_open", v).apply() }
+
     /** Сказал «НЕТ» (или смахнул вопрос) — молчим до конца этой поездки. */
     var declinedDrive: Boolean
         get() = p.getBoolean("auto_declined", false)

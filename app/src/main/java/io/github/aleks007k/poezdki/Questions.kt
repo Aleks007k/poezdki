@@ -66,6 +66,7 @@ class AnswerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Questions.cancel(context)
         val prefs = Prefs(context)
+        prefs.askOpen = false
         prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
         prefs.declinedDrive = true
         prefs.notInCarStreak = 0
