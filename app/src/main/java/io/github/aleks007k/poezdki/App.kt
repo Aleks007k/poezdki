@@ -101,6 +101,7 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         companionLabel = prefs.companionLabel,
                         onCompanion = activity::setCompanion,
                         onRefuels = { screen = Screen.FUEL },
+                        onTestCompanion = activity::testCompanion,
                     )
                     else -> MainScreen(
                         db, activity, onSummary = { screen = Screen.SUMMARY }, onFuelLog = { screen = Screen.FUEL },

@@ -96,7 +96,7 @@ fun CompanionPicker(onPick: (LaunchableApp?) -> Unit, onDismiss: () -> Unit) {
 
 /** Блок на экране «VIP Борт №1»: что запускать вместе с поездкой. */
 @Composable
-fun CompanionSection(label: String?, onPick: (LaunchableApp?) -> Unit) {
+fun CompanionSection(label: String?, onPick: (LaunchableApp?) -> Unit, onTest: () -> Unit = {}) {
     var picking by remember { mutableStateOf(false) }
     Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 0.dp, onClick = { picking = true }) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -110,6 +110,11 @@ fun CompanionSection(label: String?, onPick: (LaunchableApp?) -> Unit) {
             }
         }
     }
-    if (label != null) Text(stringResource(R.string.companion_warning), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
+    if (label != null) {
+        TextButton(onClick = onTest) {
+            Text(stringResource(R.string.companion_test), color = C.Amber, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+        Text(stringResource(R.string.companion_warning), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
+    }
     if (picking) CompanionPicker(onPick = { onPick(it); picking = false }, onDismiss = { picking = false })
 }

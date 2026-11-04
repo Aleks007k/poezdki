@@ -245,17 +245,18 @@ class MainActivity : ComponentActivity() {
     private fun startTrip(destination: String, target: LatLon?) {
         prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
-        // Сначала приложение «вместе с поездкой» (например, Blitzer.de), потом карта — чтобы карта была сверху.
-        launchCompanion()
-        // Кнопка «Запись»: без адреса — просто записываем, Google Maps не открываем.
-        if (destination.isBlank()) return
-        if (target == null) {
-            // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
-            lifecycleScope.launch {
-                Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
+        if (destination.isNotBlank()) {
+            if (target == null) {
+                // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
+                lifecycleScope.launch {
+                    Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
+                }
             }
+            openMaps(destination)
         }
-        openMaps(destination)
+        // Потом приложение «вместе с поездкой» (например, Blitzer.de) — ПОВЕРХ карты, чтобы оно
+        // успело полностью открыться и включиться. «Назад» — и ты снова в Google Maps.
+        launchCompanion()
     }
 
     private fun openMaps(destination: String) {
@@ -408,6 +409,9 @@ class MainActivity : ComponentActivity() {
         prefs.ratesConfirmedMonth = currentMonth()
         ratesToCheck = emptyMap()
     }
+
+    /** Кнопка «Проверить» в настройках: открыть выбранное приложение сейчас. */
+    fun testCompanion() = launchCompanion()
 
     private fun launchCompanion() {
         val pkg = prefs.companionPackage ?: return
