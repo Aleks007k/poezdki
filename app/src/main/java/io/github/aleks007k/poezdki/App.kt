@@ -98,8 +98,11 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         autoProblem = AutoDetect.problem(activity),
                         lastVehicleSignal = prefs.lastVehicleSignal,
                         onFixAuto = activity::openAppSettings,
-                        companionLabel = prefs.companionLabel,
-                        onCompanion = activity::setCompanion,
+                        navigator = prefs.navigator,
+                        companions = prefs.companions,
+                        onNavigator = activity::setNavigator,
+                        onAddCompanion = activity::addCompanion,
+                        onRemoveCompanion = activity::removeCompanion,
                         onRefuels = { screen = Screen.FUEL },
                         onTestCompanion = activity::testCompanion,
                     )

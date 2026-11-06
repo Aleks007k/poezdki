@@ -47,8 +47,11 @@ fun CarScreen(
     autoProblem: Int? = null,
     lastVehicleSignal: Long = 0L,
     onFixAuto: () -> Unit = {},
-    companionLabel: String? = null,
-    onCompanion: (LaunchableApp?) -> Unit = {},
+    navigator: String = NAV_GOOGLE,
+    companions: List<CompanionApp> = emptyList(),
+    onNavigator: (String) -> Unit = {},
+    onAddCompanion: (LaunchableApp) -> Unit = {},
+    onRemoveCompanion: (String) -> Unit = {},
     onRefuels: () -> Unit = {},
     onTestCompanion: () -> Unit = {},
 ) {
@@ -159,7 +162,7 @@ fun CarScreen(
 
         // Что открыть вместе с поездкой (например, Blitzer.de).
         Section(stringResource(R.string.companion_title), C.Muted)
-        CompanionSection(companionLabel, onCompanion, onTestCompanion)
+        CompanionSection(navigator, companions, onNavigator, onAddCompanion, onRemoveCompanion, onTestCompanion)
 
         // Автозапись: работает ли и когда Android последний раз сказал «в машине».
         Section(stringResource(R.string.auto_title), C.Muted)

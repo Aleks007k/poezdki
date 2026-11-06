@@ -8,8 +8,6 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Looper
-import android.os.Handler
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
@@ -247,8 +245,8 @@ class MainActivity : ComponentActivity() {
     private fun startTrip(destination: String, target: LatLon?) {
         prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
-        // Сначала приложение «вместе с поездкой» (например, Blitzer.de)…
-        launchCompanion()
+        // Сначала приложения «вместе с поездкой» (Blitzer.de, музыка…)…
+        launchCompanions()
         if (destination.isBlank()) return
         if (target == null) {
             // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
@@ -256,9 +254,23 @@ class MainActivity : ComponentActivity() {
                 Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
             }
         }
-        // …и сразу карта поверх него. С паузой нельзя: через секунду приложение уже в фоне,
+        // …и сразу навигатор поверх них. С паузой нельзя: через секунду приложение уже в фоне,
         // а Android не даёт приложениям из фона открывать другие приложения.
+        if (prefs.navigator == NAV_WAZE && openWaze(destination, target)) return
         openMaps(this, destination)
+    }
+
+    /** Waze с маршрутом. false — Waze не установлен. */
+    private fun openWaze(destination: String, target: LatLon?): Boolean {
+        val link = target?.let { "https://waze.com/ul?ll=${it.lat},${it.lon}&navigate=yes" }
+            ?: "https://waze.com/ul?q=${Uri.encode(destination)}&navigate=yes"
+        return try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)).setPackage("com.waze").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.waze_missing, Toast.LENGTH_LONG).show()
+            false
+        }
     }
 
     private fun openMaps(context: android.content.Context, destination: String) {
@@ -413,35 +425,40 @@ class MainActivity : ComponentActivity() {
         ratesToCheck = emptyMap()
     }
 
-    /** Кнопка «Проверить» в настройках: открыть выбранное приложение сейчас. */
+    /** Кнопка «Проверить» в настройках: открыть выбранные приложения сейчас. */
     fun testCompanion() {
-        launchCompanion()
+        launchCompanions()
     }
 
-    /** Открыть приложение «вместе с поездкой». true — открыли. */
-    private fun launchCompanion(): Boolean {
-        val pkg = prefs.companionPackage ?: return false
-        val label = prefs.companionLabel ?: pkg
-        val launch = packageManager.getLaunchIntentForPackage(pkg)
-        if (launch == null) {
-            // Приложение удалили или Android его не видит.
-            Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
-            return false
-        }
-        return try {
-            startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        } catch (e: Exception) {
-            // Не открылось — поездка всё равно записывается, но скажем об этом.
-            Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
-            false
+    /** Открыть по очереди приложения «вместе с поездкой». */
+    private fun launchCompanions() {
+        for (app in prefs.companions) {
+            val launch = packageManager.getLaunchIntentForPackage(app.pkg)
+            try {
+                if (launch == null) throw ActivityNotFoundException() // удалили или Android его не видит
+                startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) {
+                // Не открылось — поездка всё равно записывается, но скажем об этом.
+                Toast.makeText(this, getString(R.string.companion_failed, app.label), Toast.LENGTH_LONG).show()
+            }
         }
     }
 
-    /** Выбор приложения «вместе с поездкой». null — ничего не запускать. */
-    fun setCompanion(app: LaunchableApp?) {
-        prefs.companionPackage = app?.packageName
-        prefs.companionLabel = app?.label
+    fun addCompanion(app: LaunchableApp) {
+        val list = prefs.companions
+        if (list.none { it.pkg == app.packageName } && list.size < Config.MAX_COMPANIONS) {
+            prefs.companions = list + CompanionApp(app.packageName, app.label)
+            AppState.dataChanged()
+        }
+    }
+
+    fun removeCompanion(pkg: String) {
+        prefs.companions = prefs.companions.filter { it.pkg != pkg }
+        AppState.dataChanged()
+    }
+
+    fun setNavigator(nav: String) {
+        prefs.navigator = nav
         AppState.dataChanged()
     }
 

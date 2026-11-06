@@ -3,6 +3,13 @@ package io.github.aleks007k.poezdki
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,9 +64,9 @@ fun launchableApps(context: Context): List<LaunchableApp> {
         .sortedWith(compareBy({ !it.label.contains("blitzer", ignoreCase = true) }, { it.label.lowercase() }))
 }
 
-/** Окно выбора: список приложений и «Ничего не запускать». */
+/** Окно выбора приложения. */
 @Composable
-fun CompanionPicker(onPick: (LaunchableApp?) -> Unit, onDismiss: () -> Unit) {
+fun CompanionPicker(onPick: (LaunchableApp) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     var apps by remember { mutableStateOf<List<LaunchableApp>?>(null) }
     LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) { launchableApps(context) } }
@@ -69,12 +76,6 @@ fun CompanionPicker(onPick: (LaunchableApp?) -> Unit, onDismiss: () -> Unit) {
         title = { Big(stringResource(R.string.companion_pick), 20) },
         text = {
             LazyColumn(Modifier.heightIn(max = 420.dp)) {
-                item {
-                    Text(
-                        stringResource(R.string.companion_none), color = C.Muted, fontSize = 17.sp,
-                        modifier = Modifier.fillMaxWidth().clickable { onPick(null) }.padding(vertical = 12.dp),
-                    )
-                }
                 items(apps.orEmpty(), key = { it.packageName }) { app ->
                     Row(
                         Modifier.fillMaxWidth().clickable { onPick(app) }.padding(vertical = 8.dp),
@@ -94,27 +95,62 @@ fun CompanionPicker(onPick: (LaunchableApp?) -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-/** Блок на экране «VIP Борт №1»: что запускать вместе с поездкой. */
+/**
+ * Блок «Вместе с поездкой»: какой навигатор открывать с маршрутом и какие приложения
+ * (до 3) открыть перед ним — Blitzer.de, музыку и т. п.
+ */
 @Composable
-fun CompanionSection(label: String?, onPick: (LaunchableApp?) -> Unit, onTest: () -> Unit = {}) {
+fun CompanionSection(
+    navigator: String,
+    companions: List<CompanionApp>,
+    onNavigator: (String) -> Unit,
+    onAdd: (LaunchableApp) -> Unit,
+    onRemove: (String) -> Unit,
+    onTest: () -> Unit,
+) {
     var picking by remember { mutableStateOf(false) }
-    Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 0.dp, onClick = { picking = true }) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.companion_label), color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    label ?: stringResource(R.string.companion_none), fontSize = 19.sp, fontWeight = FontWeight.Bold,
-                    color = if (label != null) C.Text else C.Dim, modifier = Modifier.weight(1f),
-                )
-                Ico(R.drawable.ic_chevron_right, C.Dim, 20.dp)
+    Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.navigator_title), color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NavChip(stringResource(R.string.nav_google), navigator == NAV_GOOGLE, Modifier.weight(1f)) { onNavigator(NAV_GOOGLE) }
+                NavChip(stringResource(R.string.nav_waze), navigator == NAV_WAZE, Modifier.weight(1f)) { onNavigator(NAV_WAZE) }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(stringResource(R.string.companions_more), color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            companions.forEachIndexed { i, app ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${i + 1}. ${app.label}", fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { onRemove(app.pkg) }) {
+                        Text("✕", color = C.Muted, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            if (companions.size < Config.MAX_COMPANIONS) {
+                Box(
+                    Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(14.dp))
+                        .dashedBorder(C.Line, 14.dp).clickable { picking = true },
+                    contentAlignment = Alignment.Center,
+                ) { Text(stringResource(R.string.companion_add), color = C.Amber, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
             }
         }
     }
-    if (label != null) {
+    if (companions.isNotEmpty()) {
         TextButton(onClick = onTest) {
             Text(stringResource(R.string.companion_test), color = C.Amber, fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
-        Text(stringResource(R.string.companion_warning), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
     }
-    if (picking) CompanionPicker(onPick = { onPick(it); picking = false }, onDismiss = { picking = false })
+    Text(stringResource(R.string.companion_warning), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
+    if (picking) CompanionPicker(onPick = { onAdd(it); picking = false }, onDismiss = { picking = false })
+}
+
+@Composable
+private fun NavChip(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier.height(46.dp).clip(shape)
+            .background(if (selected) C.Amber else Color.Transparent)
+            .border(1.dp, if (selected) C.Amber else C.Line, shape).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, color = if (selected) C.OnAmber else C.Soft, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
 }

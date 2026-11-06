@@ -98,13 +98,26 @@ class Prefs(context: Context) {
         get() = p.getString("last_currency", "EUR") ?: "EUR"
         set(v) { p.edit().putString("last_currency", v).apply() }
 
-    /** Запускать вместе с поездкой (например, Blitzer.de): пакет и название. Пусто — ничего. */
-    var companionPackage: String?
-        get() = p.getString("companion_pkg", null)
-        set(v) { p.edit().putString("companion_pkg", v).apply() }
-    var companionLabel: String?
-        get() = p.getString("companion_label", null)
-        set(v) { p.edit().putString("companion_label", v).apply() }
+    /** Что открывать в начале поездки перед навигатором (Blitzer.de, музыка…), по порядку. */
+    var companions: List<CompanionApp>
+        get() {
+            val saved = p.getString("companions", null)
+            if (saved == null) {
+                // Раньше было одно приложение — переносим его в список.
+                val pkg = p.getString("companion_pkg", null) ?: return emptyList()
+                return listOf(CompanionApp(pkg, p.getString("companion_label", null) ?: pkg))
+            }
+            return saved.split('\n').mapNotNull { line ->
+                val i = line.indexOf('\t')
+                if (i <= 0) null else CompanionApp(line.substring(0, i), line.substring(i + 1))
+            }
+        }
+        set(v) { p.edit().putString("companions", v.joinToString("\n") { "${it.pkg}\t${it.label}" }).apply() }
+
+    /** Навигатор для маршрута: «google» или «waze». */
+    var navigator: String
+        get() = p.getString("navigator", NAV_GOOGLE) ?: NAV_GOOGLE
+        set(v) { p.edit().putString("navigator", v).apply() }
 
     /** Вопрос «Едешь на своём авто?» уже показан — не повторять до этого времени. */
     var askedUntil: Long
@@ -131,3 +144,9 @@ class Prefs(context: Context) {
         p.edit().remove("trip_start").remove("trip_dest").remove("trip_lat").remove("trip_lon").commit()
     }
 }
+
+/** Приложение, которое открывается в начале поездки. */
+data class CompanionApp(val pkg: String, val label: String)
+
+const val NAV_GOOGLE = "google"
+const val NAV_WAZE = "waze"

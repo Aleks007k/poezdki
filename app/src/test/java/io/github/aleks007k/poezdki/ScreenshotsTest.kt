@@ -117,6 +117,16 @@ class ScreenshotsTest {
     }
 
     @Test
+    fun companions() = shot("6b_companions") {
+        androidx.compose.foundation.layout.Column(Modifier.padding(20.dp)) {
+            CompanionSection(
+                NAV_WAZE, listOf(CompanionApp("de.blitzer.plus", "Blitzer.de"), CompanionApp("com.spotify.music", "Spotify")),
+                {}, {}, {}, {},
+            )
+        }
+    }
+
+    @Test
     fun fuelSetup() = shot("7_setup_fuel") {
         FuelSetupScreen(CarCosts()) { _, _ -> }
     }
