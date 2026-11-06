@@ -247,8 +247,8 @@ class MainActivity : ComponentActivity() {
     private fun startTrip(destination: String, target: LatLon?) {
         prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
-        // Сначала приложение «вместе с поездкой» (например, Blitzer.de), чтобы оно успело включиться…
-        val companionOpened = launchCompanion()
+        // Сначала приложение «вместе с поездкой» (например, Blitzer.de)…
+        launchCompanion()
         if (destination.isBlank()) return
         if (target == null) {
             // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
@@ -256,13 +256,9 @@ class MainActivity : ComponentActivity() {
                 Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
             }
         }
-        // …потом, через несколько секунд, карта поверх него.
-        if (companionOpened) {
-            val app = applicationContext
-            Handler(Looper.getMainLooper()).postDelayed({ openMaps(app, destination) }, Config.COMPANION_MAPS_DELAY_MS)
-        } else {
-            openMaps(this, destination)
-        }
+        // …и сразу карта поверх него. С паузой нельзя: через секунду приложение уже в фоне,
+        // а Android не даёт приложениям из фона открывать другие приложения.
+        openMaps(this, destination)
     }
 
     private fun openMaps(context: android.content.Context, destination: String) {

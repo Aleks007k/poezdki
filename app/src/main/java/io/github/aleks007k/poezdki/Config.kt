@@ -90,9 +90,6 @@ object Config {
     const val AUTO_MUTE_AFTER_STOP_MS = 20 * 60_000L
 
 
-    /** Сначала приложение «вместе с поездкой» (Blitzer.de), через столько — Google Maps. */
-    const val COMPANION_MAPS_DELAY_MS = 3_000L
-
     /** Как часто просим у GPS новую точку. */
     const val GPS_INTERVAL_MS = 1_000L
 
