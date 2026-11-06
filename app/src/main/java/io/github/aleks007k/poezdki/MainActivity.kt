@@ -8,6 +8,8 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
+import android.os.Handler
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
@@ -245,31 +247,36 @@ class MainActivity : ComponentActivity() {
     private fun startTrip(destination: String, target: LatLon?) {
         prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
-        if (destination.isNotBlank()) {
-            if (target == null) {
-                // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
-                lifecycleScope.launch {
-                    Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
-                }
+        // Сначала приложение «вместе с поездкой» (например, Blitzer.de), чтобы оно успело включиться…
+        val companionOpened = launchCompanion()
+        if (destination.isBlank()) return
+        if (target == null) {
+            // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
+            lifecycleScope.launch {
+                Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
             }
-            openMaps(destination)
         }
-        // Потом приложение «вместе с поездкой» (например, Blitzer.de) — ПОВЕРХ карты, чтобы оно
-        // успело полностью открыться и включиться. «Назад» — и ты снова в Google Maps.
-        launchCompanion()
+        // …потом, через несколько секунд, карта поверх него.
+        if (companionOpened) {
+            val app = applicationContext
+            Handler(Looper.getMainLooper()).postDelayed({ openMaps(app, destination) }, Config.COMPANION_MAPS_DELAY_MS)
+        } else {
+            openMaps(this, destination)
+        }
     }
 
-    private fun openMaps(destination: String) {
+    private fun openMaps(context: android.content.Context, destination: String) {
         val q = Uri.encode(destination)
         try {
-            startActivity(
+            context.startActivity(
                 Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$q&mode=d"))
-                    .setPackage("com.google.android.apps.maps")
+                    .setPackage("com.google.android.apps.maps").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         } catch (e: ActivityNotFoundException) {
             try {
-                startActivity(
+                context.startActivity(
                     Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$q&travelmode=driving"))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 )
             } catch (e: ActivityNotFoundException) {
             }
@@ -411,22 +418,27 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Кнопка «Проверить» в настройках: открыть выбранное приложение сейчас. */
-    fun testCompanion() = launchCompanion()
+    fun testCompanion() {
+        launchCompanion()
+    }
 
-    private fun launchCompanion() {
-        val pkg = prefs.companionPackage ?: return
+    /** Открыть приложение «вместе с поездкой». true — открыли. */
+    private fun launchCompanion(): Boolean {
+        val pkg = prefs.companionPackage ?: return false
         val label = prefs.companionLabel ?: pkg
         val launch = packageManager.getLaunchIntentForPackage(pkg)
         if (launch == null) {
             // Приложение удалили или Android его не видит.
             Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
-            return
+            return false
         }
-        try {
+        return try {
             startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
         } catch (e: Exception) {
             // Не открылось — поездка всё равно записывается, но скажем об этом.
             Toast.makeText(this, getString(R.string.companion_failed, label), Toast.LENGTH_LONG).show()
+            false
         }
     }
 
