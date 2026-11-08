@@ -242,4 +242,5 @@
     <string name="allow">Разрешить</string>
     <string name="open_settings">Открыть настройки</string>
     <string name="done">Готово</string>
+    <string name="photo_missing">Фото чека нет на этом телефоне</string>
 </resources>

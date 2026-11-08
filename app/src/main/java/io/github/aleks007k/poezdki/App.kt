@@ -32,7 +32,7 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
         val step = activity.setupStep
         val current = live
         val draft = activity.refuelDraft
-        var editRates by remember { mutableStateOf(false) }
+        var editRates by rememberSaveable { mutableStateOf(false) }
 
         fun openCar(from: Screen) {
             carBack = from

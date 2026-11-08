@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12 и новее.
+    cloud-backup — копия в Google Диск владельца: только поездки и настройки, без фото чеков
+    (лимит 25 МБ; при превышении копия перестаёт сохраняться целиком).
+    device-transfer — перенос на новый телефон кабелем или по Wi‑Fi: переносим всё, вместе с фото.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+        <include domain="file" path="receipts/" />
+    </device-transfer>
+</data-extraction-rules>

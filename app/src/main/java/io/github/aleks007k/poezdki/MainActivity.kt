@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
+import java.io.File
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
@@ -37,6 +38,9 @@ import kotlinx.coroutines.withContext
 /** Шаги первого запуска. Каждый показывается один раз. */
 enum class SetupStep { FUEL, LOCATION, BACKGROUND, ACTIVITY, NOTIFICATIONS, BATTERY }
 
+private const val KEY_PENDING_DEST = "pending_dest"
+private const val KEY_PENDING_TARGET = "pending_target"
+
 class MainActivity : ComponentActivity() {
     private lateinit var prefs: Prefs
     private lateinit var db: Db
@@ -44,15 +48,22 @@ class MainActivity : ComponentActivity() {
     var setupStep by mutableStateOf<SetupStep?>(null)
         private set
 
-    /** Открытая форма заправки (null — закрыта). */
-    var refuelDraft by mutableStateOf<RefuelDraft?>(null)
-        private set
+    /** Открытая форма заправки (null — закрыта). Хранится в [RefuelSession] — переживает поворот экрана. */
+    var refuelDraft: RefuelDraft?
+        get() = RefuelSession.draft
+        private set(v) {
+            RefuelSession.draft = v
+        }
 
     /** Курсы, которые пора подтвердить (раз в месяц, если были заправки не в евро). */
     var ratesToCheck by mutableStateOf<Map<String, Double>>(emptyMap())
         private set
 
-    private var cameraFile: java.io.File? = null
+    private var cameraFile: java.io.File?
+        get() = RefuelSession.cameraPath?.let(::File)
+        set(v) {
+            RefuelSession.cameraPath = v?.path
+        }
 
     private val takePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         val f = cameraFile
@@ -64,7 +75,11 @@ class MainActivity : ComponentActivity() {
         }
         cameraOpenedForm = false
     }
-    private var cameraOpenedForm = false
+    private var cameraOpenedForm: Boolean
+        get() = RefuelSession.cameraOpenedForm
+        set(v) {
+            RefuelSession.cameraOpenedForm = v
+        }
 
     private val pickPhoto = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) onReceiptPhoto(uri)
@@ -107,6 +122,7 @@ class MainActivity : ComponentActivity() {
         )
         prefs = Prefs(this)
         db = Db.get(this)
+        restoreState(savedInstanceState)
         refreshSetup()
         setContent { PoezdkiApp(this, prefs, db) }
         handleDriveYes(intent)
@@ -119,6 +135,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Android закрыл приложение (поворот экрана, нехватка памяти) — сохранить недоделанное. */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        RefuelSession.save(outState)
+        pending?.let { (dest, target) ->
+            outState.putString(KEY_PENDING_DEST, dest)
+            target?.let { outState.putDoubleArray(KEY_PENDING_TARGET, doubleArrayOf(it.lat, it.lon)) }
+        }
+    }
+
+    private fun restoreState(saved: Bundle?) {
+        if (saved == null) return
+        // Чек читали, когда Android закрыл приложение, — прочитать снова с сохранённого фото.
+        if (RefuelSession.restore(saved)) refuelDraft?.photo?.let(::rescanReceipt)
+        saved.getString(KEY_PENDING_DEST)?.let { dest ->
+            val t = saved.getDoubleArray(KEY_PENDING_TARGET)
+            pending = dest to t?.let { LatLon(it[0], it[1]) }
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleDriveYes(intent)
@@ -128,6 +164,10 @@ class MainActivity : ComponentActivity() {
     private fun handleDriveYes(intent: Intent?) {
         if (intent?.action != Questions.ACTION_DRIVE_YES) return
         intent.action = null // чтобы при повороте экрана не начать снова
+        // Только настоящая кнопка «ДА» из нашего вопроса: метка должна совпасть.
+        val token = intent.getStringExtra(Questions.EXTRA_TOKEN)
+        if (token.isNullOrEmpty() || token != prefs.driveToken) return
+        prefs.driveToken = ""
         Questions.cancel(this)
         prefs.askedUntil = 0
         prefs.askOpen = false
@@ -344,9 +384,12 @@ class MainActivity : ComponentActivity() {
     /** Фото чека получено: сохранить, прочитать текст, дописать цифры в форму. */
     private fun onReceiptPhoto(uri: Uri) {
         val draft = refuelDraft ?: return
-        lifecycleScope.launch {
+        val app = applicationContext
+        val rates = prefs.rates
+        // Не lifecycleScope: при повороте экрана чтение чека не должно обрываться.
+        RefuelSession.scope.launch {
             refuelDraft = draft.copy(scanning = true)
-            val stored = Receipts.store(this@MainActivity, uri)
+            val stored = Receipts.store(app, uri)
             cameraFile?.delete()
             if (stored == null) {
                 refuelDraft = refuelDraft?.copy(scanning = false, scanEmpty = true)
@@ -357,7 +400,18 @@ class MainActivity : ComponentActivity() {
             refuelDraft = refuelDraft?.copy(photo = file.path)
             val text = Receipts.readText(bitmap)
             val parsed = text?.let { ReceiptParser.parse(it) } ?: ParsedReceipt()
-            refuelDraft = refuelDraft?.merge(parsed, prefs.rates)
+            refuelDraft = refuelDraft?.merge(parsed, rates)
+        }
+    }
+
+    /** Прочитать чек ещё раз с уже сохранённого фото (после перезапуска приложения). */
+    private fun rescanReceipt(path: String) {
+        val rates = prefs.rates
+        RefuelSession.scope.launch {
+            refuelDraft = refuelDraft?.copy(scanning = true)
+            val text = Receipts.load(path, Receipts.MAX_SIDE)?.let { Receipts.readText(it) }
+            val parsed = text?.let { ReceiptParser.parse(it) } ?: ParsedReceipt()
+            refuelDraft = refuelDraft?.merge(parsed, rates)
         }
     }
 
@@ -371,7 +425,7 @@ class MainActivity : ComponentActivity() {
     /** Сохранить. true — сохранено (форму закрываем). */
     fun saveRefuel(): Boolean {
         val r = refuelDraft?.toRefuel() ?: return false
-        lifecycleScope.launch {
+        RefuelSession.scope.launch {
             withContext(Dispatchers.IO) {
                 db.saveRefuel(r)
                 prefs.lastCurrency = r.currency
@@ -389,7 +443,7 @@ class MainActivity : ComponentActivity() {
 
     fun deleteRefuel() {
         val d = refuelDraft ?: return
-        lifecycleScope.launch {
+        RefuelSession.scope.launch {
             withContext(Dispatchers.IO) { db.deleteRefuel(d.id) }
             Receipts.delete(d.photo)
             AppState.dataChanged()

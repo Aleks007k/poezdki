@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,7 +109,7 @@ fun CompanionSection(
     onRemove: (String) -> Unit,
     onTest: () -> Unit,
 ) {
-    var picking by remember { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
     Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.navigator_title), color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)

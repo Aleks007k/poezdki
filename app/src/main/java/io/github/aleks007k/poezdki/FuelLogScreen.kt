@@ -213,10 +213,10 @@ fun RefuelForm(
     onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
-    var pickDate by remember { mutableStateOf(false) }
-    var pickCurrency by remember { mutableStateOf(false) }
-    var showPhoto by remember { mutableStateOf(false) }
-    var askDelete by remember { mutableStateOf(false) }
+    var pickDate by rememberSaveable { mutableStateOf(false) }
+    var pickCurrency by rememberSaveable { mutableStateOf(false) }
+    var showPhoto by rememberSaveable { mutableStateOf(false) }
+    var askDelete by rememberSaveable { mutableStateOf(false) }
     val cur = Currencies.byCode(draft.currency)
     val ready = draft.toRefuel()
 
@@ -389,10 +389,16 @@ fun CurrencyPicker(onPick: (String) -> Unit, onDismiss: () -> Unit) {
 @Composable
 fun PhotoViewer(path: String, onClose: () -> Unit) {
     var bmp by remember(path) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(path) { bmp = Receipts.load(path, 2000)?.asImageBitmap() }
+    var missing by remember(path) { mutableStateOf(false) }
+    LaunchedEffect(path) {
+        bmp = Receipts.load(path, 2000)?.asImageBitmap()
+        // Например, данные вернули из резервной копии Google — фото чеков туда не входят.
+        missing = bmp == null
+    }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize().background(C.Bg).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
             bmp?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().padding(12.dp)) }
+            if (missing) Text(stringResource(R.string.photo_missing), color = C.Muted, fontSize = 17.sp, modifier = Modifier.padding(24.dp))
         }
     }
 }

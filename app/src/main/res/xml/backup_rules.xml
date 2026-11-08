@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Резервная копия Android (Android 11 и старше) в Google Диск владельца телефона.
+    Лимит Android — 25 МБ на приложение: если данных больше, копия перестаёт сохраняться
+    ЦЕЛИКОМ. Поэтому копируем только поездки и настройки (это килобайты), без фото чеков.
+-->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

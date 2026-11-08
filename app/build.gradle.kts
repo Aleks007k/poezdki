@@ -107,4 +107,6 @@ dependencies {
     implementation(libs.mlkit.text)
 
     testImplementation(libs.junit)
+    // Тест обновления базы данных (SchemaTest) — настоящий SQLite на компьютере.
+    testImplementation(libs.sqlite.jdbc)
 }

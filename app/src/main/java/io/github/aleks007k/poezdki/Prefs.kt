@@ -36,6 +36,14 @@ class Prefs(context: Context) {
             )
         } else null
 
+    /**
+     * Секретная метка текущего вопроса «Едешь?». Кнопка «ДА» несёт её с собой — так
+     * другое приложение на телефоне не сможет само включить запись. Пусто — вопроса нет.
+     */
+    var driveToken: String
+        get() = p.getString("drive_token", "") ?: ""
+        set(v) { p.edit().putString("drive_token", v).apply() }
+
     /** Автозапись молчит до этого времени (после «НЕТ», «Стоп», ложной тревоги). */
     var autoMuteUntil: Long
         get() = p.getLong("auto_mute", 0L)

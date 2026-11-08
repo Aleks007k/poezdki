@@ -19,15 +19,18 @@ object Questions {
 
     /** Открыть приложение с этим действием = начать запись. */
     const val ACTION_DRIVE_YES = "io.github.aleks007k.poezdki.DRIVE_YES"
+    const val EXTRA_TOKEN = "token"
 
     fun askDrive(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.q_channel), NotificationManager.IMPORTANCE_HIGH)
         )
+        val token = java.util.UUID.randomUUID().toString()
+        Prefs(context).driveToken = token
         val yes = PendingIntent.getActivity(
             context, 10,
-            Intent(context, MainActivity::class.java).setAction(ACTION_DRIVE_YES)
+            Intent(context, MainActivity::class.java).setAction(ACTION_DRIVE_YES).putExtra(EXTRA_TOKEN, token)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -66,6 +69,7 @@ class AnswerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Questions.cancel(context)
         val prefs = Prefs(context)
+        prefs.driveToken = ""
         prefs.askOpen = false
         prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
         prefs.declinedDrive = true

@@ -48,57 +48,15 @@ data class Place(val id: Int, val name: String?, val address: String?, val coord
 
 /** База данных SQLite. Лежит только в телефоне. */
 class Db private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, 3) {
+    SQLiteOpenHelper(context.applicationContext, "poezdki.db", null, Schema.VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(
-            """CREATE TABLE trips (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                start_time INTEGER NOT NULL, end_time INTEGER NOT NULL,
-                start_lat REAL, start_lon REAL, end_lat REAL, end_lon REAL,
-                start_addr TEXT, end_addr TEXT,
-                distance_m REAL NOT NULL, l_per_100 REAL NOT NULL, price REAL NOT NULL,
-                destination TEXT, max_speed REAL NOT NULL DEFAULT 0,
-                stopped_ms INTEGER NOT NULL DEFAULT 0, costs TEXT,
-                paid INTEGER NOT NULL DEFAULT 0)"""
-        )
-        db.execSQL("CREATE INDEX trips_start ON trips(start_time)")
-        // Точки GPS текущей поездки. После конца поездки удаляются.
-        db.execSQL(
-            """CREATE TABLE points (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                t INTEGER NOT NULL, lat REAL NOT NULL, lon REAL NOT NULL,
-                acc REAL NOT NULL, speed REAL)"""
-        )
-        db.execSQL(
-            """CREATE TABLE places (
-                id INTEGER PRIMARY KEY, name TEXT, address TEXT, lat REAL, lon REAL)"""
-        )
-        createRefuels(db)
+        Schema.create.forEach(db::execSQL)
     }
 
-    /** Заправки: сумма в валюте чека, rate — сколько этой валюты за 1 €. */
-    private fun createRefuels(db: SQLiteDatabase) {
-        db.execSQL(
-            """CREATE TABLE refuels (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                time INTEGER NOT NULL, liters REAL NOT NULL, total REAL NOT NULL,
-                currency TEXT NOT NULL, rate REAL NOT NULL,
-                odometer REAL, full INTEGER NOT NULL DEFAULT 0, photo TEXT)"""
-        )
-        db.execSQL("CREATE INDEX refuels_time ON refuels(time)")
-    }
-
+    // Только добавляем — старые поездки остаются как были (проверяет SchemaTest).
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Только добавляем — старые поездки остаются как были.
-        if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE trips ADD COLUMN destination TEXT")
-            db.execSQL("ALTER TABLE trips ADD COLUMN max_speed REAL NOT NULL DEFAULT 0")
-            db.execSQL("ALTER TABLE trips ADD COLUMN stopped_ms INTEGER NOT NULL DEFAULT 0")
-            db.execSQL("ALTER TABLE trips ADD COLUMN costs TEXT")
-            db.execSQL("ALTER TABLE trips ADD COLUMN paid INTEGER NOT NULL DEFAULT 0")
-        }
-        if (oldVersion < 3) createRefuels(db)
+        Schema.upgrade(oldVersion).forEach(db::execSQL)
     }
 
     // --- Поездки ---

@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,8 +84,8 @@ fun TripDetailContent(
     initialExplain: CostKind? = null,
 ) {
     val context = LocalContext.current
-    var explainKind by remember { mutableStateOf(initialExplain) }
-    var askDelete by remember { mutableStateOf(false) }
+    var explainKind by rememberSaveable { mutableStateOf(initialExplain) }
+    var askDelete by rememberSaveable { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 16.dp, bottom = 20.dp),

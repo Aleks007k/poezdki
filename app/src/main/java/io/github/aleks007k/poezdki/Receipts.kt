@@ -19,7 +19,7 @@ import kotlin.coroutines.resume
 /** Фото чеков: хранение в папке приложения и чтение текста с них. */
 object Receipts {
     /** Самая длинная сторона сохранённого фото — чтобы чек занимал ~300 КБ, а не 5 МБ. */
-    private const val MAX_SIDE = 1800
+    const val MAX_SIDE = 1800
 
     private fun dir(context: Context) = File(context.filesDir, "receipts").apply { mkdirs() }
 
