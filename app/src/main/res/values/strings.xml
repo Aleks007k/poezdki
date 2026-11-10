@@ -243,7 +243,7 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_car_hint">Расходы на машину</string>
     <!-- Связь с машиной -->
-    <string name="car_link_hint">Карта сама выйдет поверх других приложений</string>
+    <string name="car_link_hint">Карта сама выйдет наверх</string>
     <string name="car_link_action">Связать с машиной</string>
     <string name="car_pick">Какая из них — машина?</string>
     <string name="car_link_your_car">машина</string>
