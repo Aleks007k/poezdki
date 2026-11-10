@@ -197,20 +197,16 @@
     <string name="rates_same">Да, тот же</string>
     <string name="rates_change">Изменить</string>
     <string name="rates_edit_title">Курсы валют</string>
-    <string name="companion_title">Вместе с поездкой</string>
-    <string name="navigator_title">Навигатор с маршрутом</string>
+    <string name="companion_title">Старт поездки</string>
+    <string name="navigator_title">Навигатор</string>
     <string name="nav_google">Google Maps</string>
     <string name="nav_waze">Waze</string>
-    <string name="companions_more">Открывать ещё перед ним (до 3)</string>
+    <string name="companions_more">Открывать перед ним</string>
     <string name="companion_add">+ Добавить приложение</string>
     <string name="waze_missing">Waze не установлен — открываю Google Maps</string>
-    <string name="companion_test">Проверить — открыть сейчас</string>
     <string name="companion_failed">Не удалось открыть %1$s</string>
     <string name="companion_pick">Какое приложение?</string>
-    <string name="companion_warning">В начале каждой поездки открываются по очереди, последним — навигатор с маршрутом. Помни: в Германии водителю нельзя пользоваться предупреждениями о камерах (75\u00A0€ и 1\u00A0балл).</string>
-    <string name="auto_on">Включена: когда телефон заметит, что ты правда едешь (сдвинулся больше чем на 400 м), спрошу «Едешь на своём авто?». ДА — начну запись.</string>
-    <string name="auto_last">Последний сигнал «в машине»: %1$s</string>
-    <string name="auto_never">Сигнала «в машине» пока не было.</string>
+    <string name="auto_on">Работает</string>
     <string name="auto_no_location">Выключена: нет доступа к местоположению.</string>
     <string name="auto_no_activity">Выключена: нет разрешения «Физическая активность».</string>
     <string name="auto_fix">Открыть разрешения</string>
@@ -247,15 +243,11 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_car_hint">Расходы на машину</string>
     <!-- Связь с машиной -->
-    <string name="car_link_title">Навигатор сам поверх других приложений</string>
-    <string name="car_link_hint">Свяжи с Bluetooth своей машины — один раз, связь действует всегда. Тогда карта сама выйдет наверх через 4 секунды после старта.
-
-Без связи: открой «Борт №1» — и карта выйдет наверх.</string>
+    <string name="car_link_hint">Карта сама выйдет поверх других приложений</string>
     <string name="car_link_action">Связать с машиной</string>
     <string name="car_pick">Какая из них — машина?</string>
     <string name="car_link_your_car">машина</string>
-    <string name="car_link_done">Связано: %1$s</string>
-    <string name="car_link_done_hint">Через 4 секунды после старта навигатор сам выходит наверх.</string>
+    <string name="car_link_done">Связано с машиной</string>
     <string name="car_unlink">Отвязать</string>
     <string name="car_linked">Готово: связано с машиной</string>
     <string name="car_link_failed">Не получилось связать. Подключи телефон к машине по Bluetooth и попробуй ещё раз.</string>

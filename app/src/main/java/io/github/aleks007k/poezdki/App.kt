@@ -108,14 +108,12 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                             onNavigator = activity::setNavigator,
                             onAddCompanion = activity::addCompanion,
                             onRemoveCompanion = activity::removeCompanion,
-                            onTestCompanion = activity::testCompanion,
                             carLink = remember(version) {
                                 CarLinkState(CarLink.available(activity), CarLink.linkedAddress(activity) != null, prefs.carName)
                             },
                             onLinkCar = activity::linkCar,
                             onUnlinkCar = activity::unlinkCar,
                             autoProblem = AutoDetect.problem(activity),
-                            lastVehicleSignal = prefs.lastVehicleSignal,
                             onFixAuto = activity::openAppSettings,
                         )
                     }

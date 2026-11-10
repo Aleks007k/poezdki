@@ -44,12 +44,10 @@ fun SettingsScreen(
     onNavigator: (String) -> Unit,
     onAddCompanion: (LaunchableApp) -> Unit,
     onRemoveCompanion: (String) -> Unit,
-    onTestCompanion: () -> Unit,
     carLink: CarLinkState,
     onLinkCar: () -> Unit,
     onUnlinkCar: () -> Unit,
     autoProblem: Int?,
-    lastVehicleSignal: Long,
     onFixAuto: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -74,24 +72,19 @@ fun SettingsScreen(
 
         // Что открывается в начале поездки.
         SectionTitle(stringResource(R.string.companion_title))
-        CompanionSection(navigator, companions, onNavigator, onAddCompanion, onRemoveCompanion, onTestCompanion)
+        CompanionSection(navigator, companions, onNavigator, onAddCompanion, onRemoveCompanion)
         if (companions.isNotEmpty() && carLink.available) CarLinkPanel(carLink, onLinkCar, onUnlinkCar)
 
-        // Автозапись: работает ли и когда Android последний раз сказал «в машине».
+        // Автозапись: одна строка; если что-то мешает — что именно и кнопка «Исправить».
         SectionTitle(stringResource(R.string.auto_title))
         Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (autoProblem != null) {
+            if (autoProblem != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(autoProblem), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.auto_fix), onFixAuto)
-                } else {
-                    Text(stringResource(R.string.auto_on), color = C.Teal, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        if (lastVehicleSignal > 0) stringResource(R.string.auto_last, shortDate(lastVehicleSignal) + ", " + timeOf(lastVehicleSignal))
-                        else stringResource(R.string.auto_never),
-                        color = C.Soft, fontSize = 14.sp,
-                    )
                 }
+            } else {
+                Text(stringResource(R.string.auto_on), color = C.Teal, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
@@ -103,24 +96,27 @@ fun SettingsScreen(
     }
 }
 
-/** Связь с Bluetooth машины: тогда навигатор сам выходит наверх через несколько секунд. */
+/** Связь с Bluetooth машины — одна строка. Связано: название машины и «Отвязать». */
 @Composable
 private fun CarLinkPanel(state: CarLinkState, onLink: () -> Unit, onUnlink: () -> Unit) {
-    Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.linked) {
+    Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp, onClick = if (state.linked) null else onLink) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Ico(R.drawable.ic_car, if (state.linked) C.Teal else C.Amber, 24.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
                 Text(
-                    stringResource(R.string.car_link_done, state.name ?: stringResource(R.string.car_link_your_car)),
-                    color = C.Teal, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+                    if (state.linked) state.name ?: stringResource(R.string.car_link_your_car) else stringResource(R.string.car_link_action),
+                    fontSize = 17.sp, fontWeight = FontWeight.Bold,
                 )
-                Text(stringResource(R.string.car_link_done_hint), color = C.Soft, fontSize = 14.sp, lineHeight = 19.sp)
-                TextButton(onClick = onUnlink, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                    Text(stringResource(R.string.car_unlink), color = C.Muted, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                }
+                Text(
+                    stringResource(if (state.linked) R.string.car_link_done else R.string.car_link_hint),
+                    color = if (state.linked) C.Teal else C.Muted, fontSize = 14.sp,
+                )
+            }
+            if (state.linked) {
+                TextButton(onClick = onUnlink) { Text(stringResource(R.string.car_unlink), color = C.Muted, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
             } else {
-                Text(stringResource(R.string.car_link_title), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.car_link_hint), color = C.Soft, fontSize = 14.sp, lineHeight = 19.sp)
-                OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.car_link_action), onLink)
+                Ico(R.drawable.ic_chevron_right, C.Dim, 20.dp)
             }
         }
     }

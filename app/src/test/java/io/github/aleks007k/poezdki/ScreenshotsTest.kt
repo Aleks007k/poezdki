@@ -122,10 +122,10 @@ class ScreenshotsTest {
             onBack = no, onCar = no,
             navigator = NAV_GOOGLE,
             companions = listOf(CompanionApp("de.blitzer.plus", "Blitzer.de")),
-            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {}, onTestCompanion = no,
+            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {},
             carLink = CarLinkState(available = true, linked = false, name = null),
             onLinkCar = no, onUnlinkCar = no,
-            autoProblem = null, lastVehicleSignal = at(14, 7, 52), onFixAuto = no,
+            autoProblem = null, onFixAuto = no,
         )
     }
 
@@ -135,10 +135,10 @@ class ScreenshotsTest {
             onBack = no, onCar = no,
             navigator = NAV_WAZE,
             companions = listOf(CompanionApp("de.blitzer.plus", "Blitzer.de")),
-            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {}, onTestCompanion = no,
+            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {},
             carLink = CarLinkState(available = true, linked = true, name = "VW Radio"),
             onLinkCar = no, onUnlinkCar = no,
-            autoProblem = R.string.auto_no_activity, lastVehicleSignal = 0, onFixAuto = no,
+            autoProblem = R.string.auto_no_activity, onFixAuto = no,
         )
     }
 
@@ -147,7 +147,7 @@ class ScreenshotsTest {
         androidx.compose.foundation.layout.Column(Modifier.padding(20.dp)) {
             CompanionSection(
                 NAV_WAZE, listOf(CompanionApp("de.blitzer.plus", "Blitzer.de"), CompanionApp("com.spotify.music", "Spotify")),
-                {}, {}, {}, {},
+                {}, {}, {},
             )
         }
     }

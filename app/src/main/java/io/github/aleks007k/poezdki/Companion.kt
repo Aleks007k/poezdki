@@ -107,8 +107,8 @@ fun CompanionSection(
     onNavigator: (String) -> Unit,
     onAdd: (LaunchableApp) -> Unit,
     onRemove: (String) -> Unit,
-    onTest: () -> Unit,
 ) {
+    val pm = LocalContext.current.packageManager
     var picking by rememberSaveable { mutableStateOf(false) }
     Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -119,9 +119,16 @@ fun CompanionSection(
             }
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.companions_more), color = C.Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            companions.forEachIndexed { i, app ->
+            companions.forEach { app ->
+                val icon = remember(app.pkg) {
+                    try { pm.getApplicationIcon(app.pkg).toBitmap(72, 72).asImageBitmap() } catch (e: Exception) { null }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${i + 1}. ${app.label}", fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    icon?.let {
+                        Image(it, contentDescription = null, modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Text(app.label, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     TextButton(onClick = { onRemove(app.pkg) }) {
                         Text("✕", color = C.Muted, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
@@ -136,12 +143,6 @@ fun CompanionSection(
             }
         }
     }
-    if (companions.isNotEmpty()) {
-        TextButton(onClick = onTest) {
-            Text(stringResource(R.string.companion_test), color = C.Amber, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-        }
-    }
-    Text(stringResource(R.string.companion_warning), color = C.Muted, fontSize = 13.sp, lineHeight = 18.sp)
     if (picking) CompanionPicker(onPick = { onAdd(it); picking = false }, onDismiss = { picking = false })
 }
 

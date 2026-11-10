@@ -505,11 +505,6 @@ class MainActivity : ComponentActivity() {
         ratesToCheck = emptyMap()
     }
 
-    /** Кнопка «Проверить» в настройках: открыть выбранные приложения сейчас. */
-    fun testCompanion() {
-        launchCompanions()
-    }
-
     /** Открыть по очереди приложения «вместе с поездкой». Возвращает, сколько открылось. */
     private fun launchCompanions(): Int {
         var opened = 0
@@ -532,8 +527,6 @@ class MainActivity : ComponentActivity() {
         if (list.none { it.pkg == app.packageName } && list.size < Config.MAX_COMPANIONS) {
             prefs.companions = list + CompanionApp(app.packageName, app.label)
             AppState.dataChanged()
-            // Первое приложение — сразу предложить связь с машиной (один раз, два нажатия).
-            if (list.isEmpty() && CarLink.available(this) && CarLink.linkedAddress(this) == null) linkCar()
         }
     }
 
