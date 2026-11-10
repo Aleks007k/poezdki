@@ -63,10 +63,22 @@ class Prefs(context: Context) {
         get() = p.getBoolean("auto_declined", false)
         set(v) { p.edit().putBoolean("auto_declined", v).apply() }
 
-    /** Сколько проверок подряд сказали «не в машине» после «НЕТ». */
-    var notInCarStreak: Int
-        get() = p.getInt("auto_not_car", 0)
-        set(v) { p.edit().putInt("auto_not_car", v).apply() }
+    /** Когда сказал «НЕТ» (или вопрос остался без ответа). */
+    var declinedAt: Long
+        get() = p.getLong("auto_declined_at", 0L)
+        set(v) { p.edit().putLong("auto_declined_at", v).apply() }
+
+    /** С какого момента телефон лежит неподвижно (0 — двигается). */
+    var stillSince: Long
+        get() = p.getLong("auto_still_since", 0L)
+        set(v) { p.edit().putLong("auto_still_since", v).apply() }
+
+    /** «НЕТ» на эту поездку: молчим, пока она не кончится (см. [AutoRules.declineOver]). */
+    fun decline(now: Long) {
+        declinedDrive = true
+        declinedAt = now
+        stillSince = 0
+    }
 
     /** Сколько раз подряд Android сказал «в машине» (для случая без геолокации). */
     var inCarStreak: Int
@@ -121,6 +133,11 @@ class Prefs(context: Context) {
             }
         }
         set(v) { p.edit().putString("companions", v.joinToString("\n") { "${it.pkg}\t${it.label}" }).apply() }
+
+    /** Название связанной машины (Bluetooth) — для подписи в настройках. */
+    var carName: String?
+        get() = p.getString("car_link_name", null)
+        set(v) { p.edit().putString("car_link_name", v).apply() }
 
     /** Навигатор для маршрута: «google» или «waze». */
     var navigator: String

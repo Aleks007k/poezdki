@@ -44,16 +44,7 @@ fun CarScreen(
     onBack: () -> Unit,
     onSave: (CarCosts) -> Unit,
     systemBack: Boolean = true,
-    autoProblem: Int? = null,
-    lastVehicleSignal: Long = 0L,
-    onFixAuto: () -> Unit = {},
-    navigator: String = NAV_GOOGLE,
-    companions: List<CompanionApp> = emptyList(),
-    onNavigator: (String) -> Unit = {},
-    onAddCompanion: (LaunchableApp) -> Unit = {},
-    onRemoveCompanion: (String) -> Unit = {},
     onRefuels: () -> Unit = {},
-    onTestCompanion: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var l100 by rememberSaveable { mutableStateOf(car.litersPer100.input()) }
@@ -160,43 +151,12 @@ fun CarScreen(
         }
         HowTo(stringResource(R.string.how_fare))
 
-        // Что открыть вместе с поездкой (например, Blitzer.de).
-        Section(stringResource(R.string.companion_title), C.Muted)
-        CompanionSection(navigator, companions, onNavigator, onAddCompanion, onRemoveCompanion, onTestCompanion)
-
-        // Автозапись: работает ли и когда Android последний раз сказал «в машине».
-        Section(stringResource(R.string.auto_title), C.Muted)
-        Panel(Modifier.fillMaxWidth(), radius = 18.dp, padding = 16.dp) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (autoProblem != null) {
-                    Text(stringResource(autoProblem), color = C.Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.auto_fix), onFixAuto)
-                } else {
-                    Text(stringResource(R.string.auto_on), color = C.Teal, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        if (lastVehicleSignal > 0) stringResource(R.string.auto_last, shortDate(lastVehicleSignal) + ", " + timeOf(lastVehicleSignal))
-                        else stringResource(R.string.auto_never),
-                        color = C.Soft, fontSize = 14.sp,
-                    )
-                }
-            }
-        }
-
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.car_hint), color = C.Muted, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         AmberButton(stringResource(R.string.save), onClick = { onSave(edited) }, enabled = valid)
-        Text(
-            stringResource(R.string.version, appVersion(context)), color = C.Dim, fontSize = 12.sp,
-            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
-private fun appVersion(context: android.content.Context): String = try {
-    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
-} catch (e: Exception) {
-    "?"
-}
 
 /** «Как узнать?» — нажал, раскрылась подсказка, как посчитать цифры. */
 @Composable

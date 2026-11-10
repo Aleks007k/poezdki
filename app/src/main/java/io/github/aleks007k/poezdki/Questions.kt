@@ -72,7 +72,6 @@ class AnswerReceiver : BroadcastReceiver() {
         prefs.driveToken = ""
         prefs.askOpen = false
         prefs.muteAuto(Config.AUTO_MUTE_AFTER_NO_MS)
-        prefs.declinedDrive = true
-        prefs.notInCarStreak = 0
+        prefs.decline(System.currentTimeMillis())
     }
 }

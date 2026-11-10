@@ -113,7 +113,33 @@ class ScreenshotsTest {
 
     @Test
     fun carScreen() = shot("6_car") {
-        CarScreen(car, no, {}, systemBack = false, lastVehicleSignal = at(14, 7, 52))
+        CarScreen(car, no, {}, systemBack = false)
+    }
+
+    @Test
+    fun settings() = shot("6c_settings") {
+        SettingsScreen(
+            onBack = no, onCar = no,
+            navigator = NAV_GOOGLE,
+            companions = listOf(CompanionApp("de.blitzer.plus", "Blitzer.de")),
+            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {}, onTestCompanion = no,
+            carLink = CarLinkState(available = true, linked = false, name = null),
+            onLinkCar = no, onUnlinkCar = no,
+            autoProblem = null, lastVehicleSignal = at(14, 7, 52), onFixAuto = no,
+        )
+    }
+
+    @Test
+    fun settingsLinked() = shot("6d_settings_linked") {
+        SettingsScreen(
+            onBack = no, onCar = no,
+            navigator = NAV_WAZE,
+            companions = listOf(CompanionApp("de.blitzer.plus", "Blitzer.de")),
+            onNavigator = {}, onAddCompanion = {}, onRemoveCompanion = {}, onTestCompanion = no,
+            carLink = CarLinkState(available = true, linked = true, name = "VW Radio"),
+            onLinkCar = no, onUnlinkCar = no,
+            autoProblem = R.string.auto_no_activity, lastVehicleSignal = 0, onFixAuto = no,
+        )
     }
 
     @Test

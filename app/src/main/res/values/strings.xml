@@ -243,4 +243,20 @@
     <string name="open_settings">Открыть настройки</string>
     <string name="done">Готово</string>
     <string name="photo_missing">Фото чека нет на этом телефоне</string>
+    <!-- Настройки -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_car_hint">Расходы на машину</string>
+    <!-- Связь с машиной -->
+    <string name="car_link_title">Навигатор сам поверх других приложений</string>
+    <string name="car_link_hint">Свяжи приложение с Bluetooth своей машины — один раз. Тогда через 4 секунды после старта карта сама выйдет наверх. Связь действует всегда, даже без Bluetooth.\n\nБез связи: если карту закрыло другое приложение — открой «Борт №1», и карта выйдет наверх.</string>
+    <string name="car_link">Связать с машиной</string>
+    <string name="car_pick">Какая из них — машина?</string>
+    <string name="car_link_your_car">машина</string>
+    <string name="car_link_done">Связано: %1$s</string>
+    <string name="car_link_done_hint">Через 4 секунды после старта навигатор сам выходит наверх.</string>
+    <string name="car_unlink">Отвязать</string>
+    <string name="car_linked">Готово: связано с машиной</string>
+    <string name="car_link_failed">Не получилось связать. Подключи телефон к машине по Bluetooth и попробуй ещё раз.</string>
+    <string name="car_link_no_devices">Телефон ещё не подключался к машине по Bluetooth</string>
+    <string name="car_link_need_permission">Без разрешения «Устройства поблизости» список Bluetooth не виден</string>
 </resources>

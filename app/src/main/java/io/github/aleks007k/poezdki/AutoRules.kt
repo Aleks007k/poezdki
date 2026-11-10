@@ -19,6 +19,20 @@ object AutoRules {
         return d / (dt / 1000.0) * 3.6 >= Config.MOVE_MIN_SPEED_KMH
     }
 
+    /**
+     * После «НЕТ» (рабочая машина, такси, автобус): кончилась ли та поездка — можно снова спрашивать.
+     *
+     * «Не в машине» для этого не годится: на трассе и в пробке датчики часто путаются,
+     * и вопрос возвращался каждые полчаса. Поездка кончилась, только если:
+     * - пошёл пешком (вышел из машины);
+     * - телефон 20 минут подряд лежит неподвижно (машина припаркована);
+     * - или прошло 6 часов (на всякий случай).
+     */
+    fun declineOver(now: Long, declinedAt: Long, walked: Boolean, stillSince: Long): Boolean =
+        walked ||
+            (stillSince > 0 && now - stillSince >= Config.DECLINE_RESET_STILL_MS) ||
+            (declinedAt > 0 && now - declinedAt >= Config.DECLINE_MAX_MS)
+
     /** Событие «сел в машину» свежее (а не старое, присланное при подписке). */
     fun freshEvent(ageMs: Long) = ageMs in 0..Config.AUTO_EVENT_MAX_AGE_MS
 }

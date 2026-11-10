@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,6 +63,7 @@ private sealed interface PlaceEdit {
 @Composable
 fun MainScreen(
     db: Db, activity: MainActivity, onSummary: () -> Unit, onFuelLog: () -> Unit = {},
+    onSettings: () -> Unit = {}, settingsAlert: Boolean = false,
     ratesToCheck: Map<String, Double> = emptyMap(), onRatesOk: () -> Unit = {}, onRatesEdit: () -> Unit = {},
 ) {
     val version by AppState.dataVersion.collectAsState()
@@ -81,6 +85,7 @@ fun MainScreen(
         ratesToCheck = ratesToCheck, onRatesOk = onRatesOk, onRatesEdit = onRatesEdit,
         onGo = activity::go, onSavePlace = activity::savePlace, onAddPlace = activity::addPlace,
         onDeletePlace = activity::deletePlace, onSummary = onSummary,
+        onSettings = onSettings, settingsAlert = settingsAlert,
     )
 }
 
@@ -100,6 +105,8 @@ fun MainContent(
     onAddPlace: (String, String) -> Unit,
     onDeletePlace: (Int) -> Unit,
     onSummary: () -> Unit,
+    onSettings: () -> Unit = {},
+    settingsAlert: Boolean = false,
 ) {
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf("") }
@@ -211,14 +218,28 @@ fun MainContent(
         }
 
         Spacer(Modifier.height(12.dp))
-        Panel(Modifier.fillMaxWidth(), radius = 26.dp, padding = 0.dp, onClick = onSummary) {
-            Row(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Caption(stringResource(R.string.this_week))
-                    Big(kmText(context, weekMeters), 22)
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Panel(Modifier.weight(1f), radius = 26.dp, padding = 0.dp, onClick = onSummary) {
+                Row(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Caption(stringResource(R.string.this_week))
+                        Big(kmText(context, weekMeters), 22)
+                    }
+                    Text(stringResource(R.string.summary), color = C.Muted, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Ico(R.drawable.ic_chevron_right, C.Muted, 20.dp)
                 }
-                Text(stringResource(R.string.summary), color = C.Muted, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Ico(R.drawable.ic_chevron_right, C.Muted, 20.dp)
+            }
+            // Настройки. Жёлтая точка — автозапись не работает.
+            Panel(Modifier.fillMaxHeight().aspectRatio(1f), radius = 26.dp, padding = 0.dp, onClick = onSettings) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Ico(R.drawable.ic_settings, C.Muted, 26.dp, stringResource(R.string.settings_title))
+                    if (settingsAlert) {
+                        Box(
+                            Modifier.align(Alignment.TopEnd).padding(14.dp).size(10.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape).background(C.Amber)
+                        )
+                    }
+                }
             }
         }
     }

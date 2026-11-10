@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class Screen { MAIN, SUMMARY, TRIP, CAR, FUEL }
+private enum class Screen { MAIN, SUMMARY, TRIP, CAR, FUEL, SETTINGS }
 
 @Composable
 fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
@@ -42,6 +42,7 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp)) {
             // Во время записи на других экранах — полоска; нажал — назад к поездке.
             if (current != null && screen != Screen.MAIN) RecordingBar(current.distanceM) { screen = Screen.MAIN }
+            activity.carPicker?.let { CarPicker(it, onPick = activity::linkCarTo, onDismiss = activity::closeCarPicker) }
             if (editRates) RatesDialog(
                 activity.ratesToCheck,
                 onSave = { activity.confirmRates(it); editRates = false },
@@ -95,19 +96,32 @@ fun PoezdkiApp(activity: MainActivity, prefs: Prefs, db: Db) {
                         car,
                         onBack = { screen = carBack },
                         onSave = { activity.saveCar(it); screen = carBack },
-                        autoProblem = AutoDetect.problem(activity),
-                        lastVehicleSignal = prefs.lastVehicleSignal,
-                        onFixAuto = activity::openAppSettings,
-                        navigator = prefs.navigator,
-                        companions = prefs.companions,
-                        onNavigator = activity::setNavigator,
-                        onAddCompanion = activity::addCompanion,
-                        onRemoveCompanion = activity::removeCompanion,
                         onRefuels = { screen = Screen.FUEL },
-                        onTestCompanion = activity::testCompanion,
                     )
+                    screen == Screen.SETTINGS -> {
+                        BackHandler { screen = Screen.MAIN }
+                        SettingsScreen(
+                            onBack = { screen = Screen.MAIN },
+                            onCar = { openCar(Screen.SETTINGS) },
+                            navigator = prefs.navigator,
+                            companions = prefs.companions,
+                            onNavigator = activity::setNavigator,
+                            onAddCompanion = activity::addCompanion,
+                            onRemoveCompanion = activity::removeCompanion,
+                            onTestCompanion = activity::testCompanion,
+                            carLink = remember(version) {
+                                CarLinkState(CarLink.available(activity), CarLink.linkedAddress(activity) != null, prefs.carName)
+                            },
+                            onLinkCar = activity::linkCar,
+                            onUnlinkCar = activity::unlinkCar,
+                            autoProblem = AutoDetect.problem(activity),
+                            lastVehicleSignal = prefs.lastVehicleSignal,
+                            onFixAuto = activity::openAppSettings,
+                        )
+                    }
                     else -> MainScreen(
                         db, activity, onSummary = { screen = Screen.SUMMARY }, onFuelLog = { screen = Screen.FUEL },
+                        onSettings = { screen = Screen.SETTINGS }, settingsAlert = AutoDetect.problem(activity) != null,
                         ratesToCheck = activity.ratesToCheck,
                         onRatesOk = { activity.confirmRates() }, onRatesEdit = { editRates = true },
                     )

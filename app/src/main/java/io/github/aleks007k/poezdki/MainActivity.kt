@@ -8,6 +8,8 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
@@ -39,6 +41,36 @@ import kotlinx.coroutines.withContext
 enum class SetupStep { FUEL, LOCATION, BACKGROUND, ACTIVITY, NOTIFICATIONS, BATTERY }
 
 private const val KEY_PENDING_DEST = "pending_dest"
+
+/**
+ * Страховка без связи с машиной: Blitzer.de закрыл карту — открыл «Борт №1» в первые
+ * 2 минуты поездки, и карта сразу выходит наверх. Срабатывает один раз.
+ */
+private object NavOnReturn {
+    private var until = 0L
+    private var wentAway = false
+
+    fun arm() {
+        until = System.currentTimeMillis() + Config.NAV_ON_RETURN_MS
+        wentAway = false
+    }
+
+    /** Приложение ушло с экрана (его закрыли Blitzer и карта). */
+    fun left() {
+        if (until > 0) wentAway = true
+    }
+
+    /** Пора открыть карту снова? (один раз) */
+    fun take(): Boolean {
+        val now = System.currentTimeMillis()
+        val ok = wentAway && now < until
+        if (ok || now >= until) {
+            until = 0
+            wentAway = false
+        }
+        return ok
+    }
+}
 private const val KEY_PENDING_TARGET = "pending_target"
 
 class MainActivity : ComponentActivity() {
@@ -155,6 +187,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        NavOnReturn.left()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleDriveYes(intent)
@@ -176,6 +213,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        reopenNavigatorIfNeeded()
         refreshSetup()
         TripService.resumeIfNeeded(this)
         AutoDetect.register(this)
@@ -286,7 +324,7 @@ class MainActivity : ComponentActivity() {
         prefs.declinedDrive = false // сам начал запись — прошлое «НЕТ» больше не действует
         TripService.start(this, destination, target)
         // Сначала приложения «вместе с поездкой» (Blitzer.de, музыка…)…
-        launchCompanions()
+        val opened = launchCompanions()
         if (destination.isBlank()) return
         if (target == null) {
             // Координаты цели нужны для правила «рядом с целью». Не нашлись — работает правило 10 минут.
@@ -294,41 +332,29 @@ class MainActivity : ComponentActivity() {
                 Geo.coordsOf(this@MainActivity, destination)?.let { TripService.setTarget(this@MainActivity, it) }
             }
         }
-        // …и сразу навигатор поверх них. С паузой нельзя: через секунду приложение уже в фоне,
-        // а Android не даёт приложениям из фона открывать другие приложения.
-        if (prefs.navigator == NAV_WAZE && openWaze(destination, target)) return
-        openMaps(this, destination)
-    }
-
-    /** Waze с маршрутом. false — Waze не установлен. */
-    private fun openWaze(destination: String, target: LatLon?): Boolean {
-        val link = target?.let { "https://waze.com/ul?ll=${it.lat},${it.lon}&navigate=yes" }
-            ?: "https://waze.com/ul?q=${Uri.encode(destination)}&navigate=yes"
-        return try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)).setPackage("com.waze").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(this, R.string.waze_missing, Toast.LENGTH_LONG).show()
-            false
-        }
-    }
-
-    private fun openMaps(context: android.content.Context, destination: String) {
-        val q = Uri.encode(destination)
-        try {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$q&mode=d"))
-                    .setPackage("com.google.android.apps.maps").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // …и сразу навигатор поверх них.
+        Navigator.open(this, prefs.navigator, destination, target)
+        if (opened == 0) return
+        // Blitzer.de при первом запуске через секунду-две сам вылезает поверх карты.
+        if (CarLink.linkedAddress(this) != null) {
+            // Связь с машиной: Android разрешает ещё раз вывести карту наверх из фона.
+            val app = applicationContext
+            val nav = prefs.navigator
+            Handler(Looper.getMainLooper()).postDelayed(
+                { Navigator.open(app, nav, destination, Prefs(app).activeTarget ?: target, quiet = true) },
+                Config.NAV_AGAIN_AFTER_MS,
             )
-        } catch (e: ActivityNotFoundException) {
-            try {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$q&travelmode=driving"))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-            } catch (e: ActivityNotFoundException) {
-            }
+        } else {
+            // Без связи: вернёшься в «Борт №1» — карта откроется сама (это Android разрешает).
+            NavOnReturn.arm()
         }
+    }
+
+    /** Вернулся в приложение вскоре после старта — значит, карту закрыли: открыть её снова. */
+    private fun reopenNavigatorIfNeeded() {
+        if (!NavOnReturn.take() || !prefs.hasActiveTrip) return
+        val dest = prefs.activeDestination
+        if (dest.isNotBlank()) Navigator.open(this, prefs.navigator, dest, prefs.activeTarget, quiet = true)
     }
 
     fun stopTrip() = TripService.stop(this)
@@ -484,18 +510,21 @@ class MainActivity : ComponentActivity() {
         launchCompanions()
     }
 
-    /** Открыть по очереди приложения «вместе с поездкой». */
-    private fun launchCompanions() {
+    /** Открыть по очереди приложения «вместе с поездкой». Возвращает, сколько открылось. */
+    private fun launchCompanions(): Int {
+        var opened = 0
         for (app in prefs.companions) {
             val launch = packageManager.getLaunchIntentForPackage(app.pkg)
             try {
                 if (launch == null) throw ActivityNotFoundException() // удалили или Android его не видит
                 startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                opened++
             } catch (e: Exception) {
                 // Не открылось — поездка всё равно записывается, но скажем об этом.
                 Toast.makeText(this, getString(R.string.companion_failed, app.label), Toast.LENGTH_LONG).show()
             }
         }
+        return opened
     }
 
     fun addCompanion(app: LaunchableApp) {
@@ -503,7 +532,63 @@ class MainActivity : ComponentActivity() {
         if (list.none { it.pkg == app.packageName } && list.size < Config.MAX_COMPANIONS) {
             prefs.companions = list + CompanionApp(app.packageName, app.label)
             AppState.dataChanged()
+            // Первое приложение — сразу предложить связь с машиной (один раз, два нажатия).
+            if (list.isEmpty() && CarLink.available(this) && CarLink.linkedAddress(this) == null) linkCar()
         }
+    }
+
+    // --- Связь с машиной ---
+
+    /** Список Bluetooth для выбора машины (null — окно закрыто). */
+    var carPicker by mutableStateOf<List<CarLink.BtDevice>?>(null)
+        private set
+    private var linkingName: String? = null
+
+    private val askBluetooth = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) linkCar() else toast(R.string.car_link_need_permission)
+    }
+
+    private val confirmLink = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
+        if (r.resultCode == RESULT_OK) {
+            prefs.carName = linkingName
+            toast(R.string.car_linked)
+        }
+        AppState.dataChanged()
+    }
+
+    /** «Связать с машиной»: разрешение → выбор машины (если их несколько) → окно Android «Разрешить?». */
+    fun linkCar() {
+        if (CarLink.needsPermission(this)) {
+            askBluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT)
+            return
+        }
+        val devices = CarLink.pairedDevices(this)
+        val cars = devices.filter { it.isCar }
+        when {
+            devices.isEmpty() -> toast(R.string.car_link_no_devices)
+            cars.size == 1 -> linkCarTo(cars[0])
+            else -> carPicker = devices
+        }
+    }
+
+    fun linkCarTo(device: CarLink.BtDevice) {
+        carPicker = null
+        linkingName = device.name
+        CarLink.link(
+            this, device.address,
+            onConfirm = { confirmLink.launch(IntentSenderRequest.Builder(it).build()) },
+            onFail = { toast(R.string.car_link_failed) },
+        )
+    }
+
+    fun closeCarPicker() {
+        carPicker = null
+    }
+
+    fun unlinkCar() {
+        CarLink.unlink(this)
+        prefs.carName = null
+        AppState.dataChanged()
     }
 
     fun removeCompanion(pkg: String) {

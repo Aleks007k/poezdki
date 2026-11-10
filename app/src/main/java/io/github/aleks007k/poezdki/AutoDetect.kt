@@ -37,16 +37,16 @@ object AutoDetect {
     fun register(context: Context) {
         if (!permitted(context)) return
         val request = ActivityTransitionRequest(
-            listOf(
+            listOf(DetectedActivity.IN_VEHICLE, DetectedActivity.WALKING).map { type ->
                 ActivityTransition.Builder()
-                    .setActivityType(DetectedActivity.IN_VEHICLE)
+                    .setActivityType(type)
                     .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
                     .build()
-            )
+            }
         )
         try {
             val client = ActivityRecognition.getClient(context)
-            // 1) «Сел в машину» — одно событие в момент посадки.
+            // 1) «Сел в машину» / «пошёл пешком» — по одному событию в момент смены.
             client.requestActivityTransitionUpdates(request, pendingIntent(context, 20))
             // 2) Запасной канал: раз в 1,5 минуты «чем ты сейчас занят» — если событие (1) потерялось.
             client.requestActivityUpdates(Config.AUTO_SAMPLE_MS, pendingIntent(context, 21))
@@ -115,41 +115,42 @@ class TransitionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prefs = Prefs(context)
         val now = System.currentTimeMillis()
-        val inCar = when {
-            ActivityTransitionResult.hasResult(intent) ->
-                ActivityTransitionResult.extractResult(intent)?.transitionEvents.orEmpty().any {
-                    it.activityType == DetectedActivity.IN_VEHICLE &&
-                        it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER &&
-                        AutoRules.freshEvent((SystemClock.elapsedRealtimeNanos() - it.elapsedRealTimeNanos) / 1_000_000)
-                }
-            ActivityRecognitionResult.hasResult(intent) ->
-                (ActivityRecognitionResult.extractResult(intent)
-                    ?.getActivityConfidence(DetectedActivity.IN_VEHICLE) ?: 0) >= Config.AUTO_MIN_CONFIDENCE
-            else -> false
+        // Событие «сел в машину» / «пошёл пешком» (свежее) или очередная проверка раз в 1,5 мин.
+        val events = if (ActivityTransitionResult.hasResult(intent)) {
+            ActivityTransitionResult.extractResult(intent)?.transitionEvents.orEmpty().filter {
+                it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER &&
+                    AutoRules.freshEvent((SystemClock.elapsedRealtimeNanos() - it.elapsedRealTimeNanos) / 1_000_000)
+            }
+        } else emptyList()
+        val sample = if (ActivityRecognitionResult.hasResult(intent)) ActivityRecognitionResult.extractResult(intent) else null
+        fun sure(type: Int) = (sample?.getActivityConfidence(type) ?: 0) >= Config.AUTO_MIN_CONFIDENCE
+
+        val inCar = events.any { it.activityType == DetectedActivity.IN_VEHICLE } || sure(DetectedActivity.IN_VEHICLE)
+        val walked = events.any { it.activityType == DetectedActivity.WALKING } ||
+            sure(DetectedActivity.ON_FOOT) || sure(DetectedActivity.WALKING) || sure(DetectedActivity.RUNNING)
+        if (sample != null) {
+            prefs.stillSince = if (sure(DetectedActivity.STILL)) prefs.stillSince.takeIf { it > 0 } ?: now else 0
+        }
+        // Сказал «НЕТ» — та поездка кончилась? (вышел и пошёл, машина долго стоит)
+        if (prefs.declinedDrive && AutoRules.declineOver(now, prefs.declinedAt, walked, prefs.stillSince)) {
+            prefs.declinedDrive = false
         }
         if (!inCar) {
             // Проверка сказала «не в машине» — серия прерывается.
-            if (ActivityRecognitionResult.hasResult(intent)) {
+            if (sample != null) {
                 prefs.inCarStreak = 0
                 prefs.lastFix = null
-                // После «НЕТ»: ~10 минут не в машине — та поездка кончилась, можно снова спрашивать.
-                if (prefs.declinedDrive) {
-                    prefs.notInCarStreak = prefs.notInCarStreak + 1
-                    if (prefs.notInCarStreak >= Config.DECLINE_RESET_SAMPLES) prefs.declinedDrive = false
-                }
             }
             return
         }
         prefs.lastVehicleSignal = now
         prefs.inCarStreak = prefs.inCarStreak + 1
-        prefs.notInCarStreak = 0
         // Сказал «НЕТ» на эту поездку (рабочая машина) — молчим, пока не выйдешь из машины.
         if (prefs.declinedDrive) return
         // Спросили и не ответили, а вопрос уже исчез — значит «не сейчас»: до конца поездки не спрашиваем.
         if (prefs.askOpen && now >= prefs.askedUntil) {
             prefs.askOpen = false
-            prefs.declinedDrive = true
-            prefs.notInCarStreak = 0
+            prefs.decline(now)
             return
         }
         // Запись уже идёт, недавно сказали «НЕТ» / «Стоп» или вопрос уже висит — молчим.

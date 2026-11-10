@@ -37,4 +37,24 @@ class AutoRulesTest {
         assertTrue(AutoRules.freshEvent(30_000L))
         assertFalse(AutoRules.freshEvent(60 * 60_000L))
     }
+
+    @Test
+    fun declineLastsWholeDriveEvenIfSensorsAreUnsure() {
+        val no = t0
+        // Час по трассе без остановок: не шёл пешком, телефон не лежал 20 минут — молчим.
+        assertFalse(AutoRules.declineOver(no + 60 * 60_000, no, walked = false, stillSince = 0))
+        // Пробка 10 минут — ещё та же поездка.
+        assertFalse(AutoRules.declineOver(no + 40 * 60_000, no, walked = false, stillSince = no + 30 * 60_000))
+    }
+
+    @Test
+    fun declineEndsWhenDriveIsOver() {
+        val no = t0
+        // Вышел из машины и пошёл.
+        assertTrue(AutoRules.declineOver(no + 50 * 60_000, no, walked = true, stillSince = 0))
+        // Машина стоит 20 минут (телефон неподвижен).
+        assertTrue(AutoRules.declineOver(no + 60 * 60_000, no, walked = false, stillSince = no + 40 * 60_000))
+        // На всякий случай — через 6 часов.
+        assertTrue(AutoRules.declineOver(no + 6 * 60 * 60_000, no, walked = false, stillSince = 0))
+    }
 }
