@@ -249,7 +249,7 @@
     <!-- Связь с машиной -->
     <string name="car_link_title">Навигатор сам поверх других приложений</string>
     <string name="car_link_hint">Свяжи приложение с Bluetooth своей машины — один раз. Тогда через 4 секунды после старта карта сама выйдет наверх. Связь действует всегда, даже без Bluetooth.\n\nБез связи: если карту закрыло другое приложение — открой «Борт №1», и карта выйдет наверх.</string>
-    <string name="car_link">Связать с машиной</string>
+    <string name="car_link_action">Связать с машиной</string>
     <string name="car_pick">Какая из них — машина?</string>
     <string name="car_link_your_car">машина</string>
     <string name="car_link_done">Связано: %1$s</string>

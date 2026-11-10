@@ -120,7 +120,7 @@ private fun CarLinkPanel(state: CarLinkState, onLink: () -> Unit, onUnlink: () -
             } else {
                 Text(stringResource(R.string.car_link_title), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(stringResource(R.string.car_link_hint), color = C.Soft, fontSize = 14.sp, lineHeight = 19.sp)
-                OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.car_link), onLink)
+                OutlineLink(R.drawable.ic_chevron_right, stringResource(R.string.car_link_action), onLink)
             }
         }
     }
